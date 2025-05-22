@@ -3,6 +3,7 @@
  * Returns a Polygon or MultiPolygon geometry if valid, else null.
  * Ensures polygons are closed (first and last coordinates equal).
  */
+
 function closePolygonIfNeeded(coords: number[][]): number[][] {
   if (
     coords.length > 2 &&
