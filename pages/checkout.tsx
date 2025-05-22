@@ -168,6 +168,16 @@ export default function CheckoutPage() {
     }
   }, [tip, customTip]);
 
+  async function robustFetchJSON(res: Response) {
+    // Always read the response as text first, then try to parse as JSON
+    const responseText = await res.text();
+    try {
+      return JSON.parse(responseText);
+    } catch {
+      throw new Error(`Unexpected server response: ${responseText}`);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -190,7 +200,14 @@ export default function CheckoutPage() {
           cart, tip: tipAmount, userId: session.user.id, paymentMethodId: selectedSavedCard
         })
       });
-      const data = await res.json();
+      let data;
+      try {
+        data = await robustFetchJSON(res);
+      } catch (err: any) {
+        setError(err.message || "Payment failed.");
+        setLoading(false);
+        return;
+      }
       if (!data.success) {
         setError(data.error || "Payment failed.");
         setLoading(false);
@@ -232,7 +249,14 @@ export default function CheckoutPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ cart, tip: tipAmount, saveCard, userId: session.user.id })
     });
-    const data = await res.json();
+    let data;
+    try {
+      data = await robustFetchJSON(res);
+    } catch (err: any) {
+      setError(err.message || "Payment initiation failed.");
+      setLoading(false);
+      return;
+    }
     if (!data.clientSecret) {
       setError(data.error || "Payment initiation failed.");
       setLoading(false);
