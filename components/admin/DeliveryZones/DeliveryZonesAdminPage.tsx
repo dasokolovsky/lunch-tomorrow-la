@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import ZoneForm from "./ZoneForm";
-import ZoneMap from "./ZoneMap";
+import dynamic from "next/dynamic";
+const ZoneMap = dynamic(() => import("./ZoneMap"), { ssr: false });
 
 export default function DeliveryZonesAdminPage() {
   const [zones, setZones] = useState<any[]>([]);
