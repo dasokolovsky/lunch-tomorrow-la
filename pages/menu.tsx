@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../utils/supabaseClient";
 import { useRouter } from "next/router";
+import dynamic from "next/dynamic";
+import { geocodeAddress } from "../utils/addressToCoord";
+import { pointInZones } from "../utils/zoneCheck";
+
+// Dynamically import Leaflet map, SSR disabled
+const LeafletMap = dynamic(() => import("../components/LeafletMapUser"), { ssr: false });
 
 function getTodayISO() {
   const today = new Date();
@@ -28,6 +34,13 @@ export default function MenuPage() {
   const [cart, setCart] = useState<any[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
+
+  // Delivery zone eligibility
+  const [address, setAddress] = useState("");
+  const [zones, setZones] = useState<any[]>([]);
+  const [userLoc, setUserLoc] = useState<{ lat: number, lon: number } | null>(null);
+  const [eligibleZone, setEligibleZone] = useState<any | null>(null);
+  const [zoneError, setZoneError] = useState("");
 
   useEffect(() => {
     setCart(loadCart());
@@ -83,6 +96,48 @@ export default function MenuPage() {
     fetchMenu();
   }, []);
 
+  // Fetch zones once on mount
+  useEffect(() => {
+    fetch("/api/delivery-zones")
+      .then(r => r.json())
+      .then(setZones)
+      .catch(() => setZones([]));
+  }, []);
+
+  async function handleCheckZone(e: any) {
+    e.preventDefault();
+    setZoneError("");
+    setEligibleZone(null);
+    setUserLoc(null);
+
+    if (!address.trim()) {
+      setZoneError("Please enter your delivery address.");
+      return;
+    }
+
+    let loc;
+    try {
+      loc = await geocodeAddress(address);
+    } catch (err: any) {
+      setZoneError("Could not look up your address.");
+      return;
+    }
+    if (!loc) {
+      setZoneError("Could not find that address.");
+      return;
+    }
+    setUserLoc(loc);
+
+    const zone = pointInZones(loc, zones);
+    if (zone) {
+      setEligibleZone(zone);
+      setZoneError("");
+    } else {
+      setEligibleZone(null);
+      setZoneError("Sorry, you are outside of our delivery area.");
+    }
+  }
+
   function addToCart(item: any) {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === item.id);
@@ -99,6 +154,9 @@ export default function MenuPage() {
   function goToCart() {
     router.push("/cart");
   }
+
+  // Disable ordering if not eligible
+  const canOrder = eligibleZone !== null;
 
   return (
     <div
@@ -123,6 +181,83 @@ export default function MenuPage() {
       <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
         {getTodayISO()}
       </p>
+      {/* Delivery zone eligibility checker */}
+      <form
+        onSubmit={handleCheckZone}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          marginBottom: 24,
+          gap: 8,
+          maxWidth: 420,
+          margin: "0 auto 32px auto",
+        }}
+      >
+        <label style={{ fontWeight: 500 }}>
+          Enter delivery address:
+          <input
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            placeholder="123 Main St, City, State"
+            required
+            style={{
+              marginLeft: 12,
+              padding: "6px 10px",
+              border: "1px solid #bbb",
+              borderRadius: 4,
+              width: 220,
+            }}
+          />
+        </label>
+        <button
+          type="submit"
+          style={{
+            marginTop: 8,
+            background: "#0070f3",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "8px 18px",
+            fontWeight: 600,
+            fontSize: 16,
+            cursor: "pointer",
+          }}
+        >
+          Check Delivery Eligibility
+        </button>
+      </form>
+      {/* Zone feedback/map */}
+      {zoneError && (
+        <div style={{
+          background: "#ffe0e0",
+          color: "#a33",
+          border: "1px solid #f99",
+          borderRadius: 8,
+          padding: "12px 16px",
+          margin: "16px auto",
+          maxWidth: 420,
+          textAlign: "center",
+        }}>
+          {zoneError}
+          <LeafletMap zones={zones} userLoc={userLoc} highlightZone={null} />
+        </div>
+      )}
+      {eligibleZone && (
+        <div style={{
+          background: "#e6ffe9",
+          color: "#165c2e",
+          border: "1px solid #81e2a0",
+          borderRadius: 8,
+          padding: "12px 16px",
+          margin: "16px auto",
+          maxWidth: 420,
+          textAlign: "center",
+        }}>
+          You're eligible for delivery in zone: <b>{eligibleZone.name}</b>
+          <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone.id} />
+        </div>
+      )}
       {error && (
         <div
           style={{
@@ -242,6 +377,8 @@ export default function MenuPage() {
                   transition: "background 0.2s",
                   boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
                 }}
+                disabled={!canOrder}
+                title={!canOrder ? "Enter your address and check delivery eligibility first" : undefined}
               >
                 Add to Cart
               </button>
