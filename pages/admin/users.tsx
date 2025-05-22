@@ -25,7 +25,7 @@ export default function AdminUsersPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/admin/list-users");
+      const res = await fetch("/api/list-users");
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Unknown error");
       setUsers((json.users || []).filter((u: User) => !!u.phone));
