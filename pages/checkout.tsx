@@ -178,6 +178,16 @@ export default function CheckoutPage() {
     }
   }
 
+  async function ensureUserProfileExists(userId: string) {
+    // Upsert a profile row for this user
+    await supabase
+      .from("profiles")
+      .upsert({
+        id: userId
+        // Add more fields here if needed (e.g., full_name, address, etc.)
+      }, { onConflict: "id" });
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
@@ -190,6 +200,11 @@ export default function CheckoutPage() {
     }
 
     const tipAmount = Number(customTip) > 0 && tip === -1 ? Number(customTip) : tip;
+
+    // --- Always ensure the user has a row in profiles ---
+    if (session?.user?.id) {
+      await ensureUserProfileExists(session.user.id);
+    }
 
     if (selectedSavedCard) {
       // Pay with saved method
