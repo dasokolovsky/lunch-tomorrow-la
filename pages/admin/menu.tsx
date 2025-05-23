@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
+import Image from "next/image";
 
 type MenuItem = {
   id: number;
@@ -25,12 +26,12 @@ export default function AdminMenuTablePage() {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
-  const [editRowId, setEditRowId] = useState<number | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [saving, setSaving] = useState(false);
+  const [editRowId, setEditRowId] = useState<number | null>(null);
 
   // Fetch all menu items with their menu date
   async function fetchItems() {
@@ -212,10 +213,12 @@ export default function AdminMenuTablePage() {
         <td style={{ textAlign: "right" }}>${(item.price_cents / 100).toFixed(2)}</td>
         <td>
           {item.image_url ? (
-            <img
+            <Image
               src={item.image_url}
               alt={item.name}
-              style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 4, border: "1px solid #eee" }}
+              width={38}
+              height={38}
+              style={{ objectFit: "cover", borderRadius: 4, border: "1px solid #eee" }}
               onError={e => (e.currentTarget.style.display = "none")}
             />
           ) : null}
