@@ -206,7 +206,7 @@ export default function AdminMenuTablePage() {
   // Table render helpers
   function renderRow(item: MenuItem) {
     return (
-      <tr key={item.id}>
+      <tr key={item.id} style={editRowId === item.id ? { background: "#f0f8ff" } : {}}>
         <td style={{ fontFamily: "monospace", fontSize: 15 }}>{item.menus.date}</td>
         <td>{item.name}</td>
         <td>{item.description}</td>
