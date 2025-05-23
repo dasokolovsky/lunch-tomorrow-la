@@ -1,22 +1,23 @@
 import * as turf from "@turf/turf";
+import type { Feature, Geometry, FeatureCollection } from "geojson";
 
 /**
  * Helper to extract a Feature or Geometry from AllGeoJSON.
  */
-function getFeatureOrGeometry(geojson: turf.AllGeoJSON): turf.Feature | turf.Geometry | null {
+function getFeatureOrGeometry(geojson: turf.AllGeoJSON): Feature | Geometry | null {
   if (!geojson) return null;
   if (
     geojson.type === "FeatureCollection" &&
-    Array.isArray((geojson as turf.FeatureCollection).features) &&
-    (geojson as turf.FeatureCollection).features.length > 0
+    Array.isArray((geojson as FeatureCollection).features) &&
+    (geojson as FeatureCollection).features.length > 0
   ) {
-    return (geojson as turf.FeatureCollection).features[0];
+    return (geojson as FeatureCollection).features[0];
   }
   if (geojson.type === "Feature") {
-    return geojson as turf.Feature;
+    return geojson as Feature;
   }
   if (geojson.type === "Polygon" || geojson.type === "MultiPolygon") {
-    return geojson as turf.Geometry;
+    return geojson as Geometry;
   }
   return null;
 }
@@ -47,6 +48,7 @@ export function findOverlappingZones(
 export function mergeZones(
   geojsonA: turf.AllGeoJSON,
   geojsonB: turf.AllGeoJSON
-): turf.Feature<turf.Polygon | turf.MultiPolygon> {
-  return turf.union(geojsonA as any, geojsonB as any);
+): Feature {
+  // The return type is Feature<Polygon | MultiPolygon>, but turf.union's types are loose
+  return turf.union(geojsonA as any, geojsonB as any) as Feature;
 }
