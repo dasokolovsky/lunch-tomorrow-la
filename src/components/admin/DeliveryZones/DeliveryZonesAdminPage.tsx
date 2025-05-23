@@ -1,17 +1,9 @@
 import React, { useEffect, useState } from "react";
 import ZoneForm from "./ZoneForm";
 import dynamic from "next/dynamic";
-const ZoneMap = dynamic(() => import("./ZoneMap"), { ssr: false });
+import { Zone } from "@/types/zone"; // <-- Import the shared Zone type
 
-// ---- Type Definitions ----
-interface Zone {
-  id: number | string;
-  name: string;
-  geojson?: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
-  active: boolean;
-  windows: Record<string, { start: string; end: string }[]>; // <-- ensure present
-  [key: string]: unknown;
-}
+const ZoneMap = dynamic(() => import("./ZoneMap"), { ssr: false });
 
 export default function DeliveryZonesAdminPage() {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -20,24 +12,27 @@ export default function DeliveryZonesAdminPage() {
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: Zone[]) =>
+      .then((zones: any[]) =>
         setZones(zones.map(z => ({
           ...z,
+          id: String(z.id), // <-- always string
           windows: z.windows ?? {}
         })))
       );
   }, []);
 
   function handleEdit(zone: Zone) {
-    setEditingZone({ ...zone, windows: zone.windows ?? {} });
+    setEditingZone({ ...zone, id: String(zone.id), windows: zone.windows ?? {} });
   }
+
   function handleDone() {
     setEditingZone(null);
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: Zone[]) =>
+      .then((zones: any[]) =>
         setZones(zones.map(z => ({
           ...z,
+          id: String(z.id), // <-- always string
           windows: z.windows ?? {}
         })))
       );

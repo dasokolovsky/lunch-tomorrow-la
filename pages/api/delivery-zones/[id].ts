@@ -7,12 +7,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === "PUT") {
     const { name, geojson, windows, active } = req.body;
+    // Ensure windows is always an object
+    const zoneWindows = windows ?? {};
+
     const { data, error } = await supabaseAdmin
       .from("delivery_zones")
-      .update({ name, geojson, windows, active })
+      .update({ name, geojson, windows: zoneWindows, active })
       .eq("id", id)
       .select()
       .single();
+
     if (error) return res.status(500).json({ error: error.message });
     res.json(data);
   } else if (req.method === "DELETE") {

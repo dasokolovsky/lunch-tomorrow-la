@@ -4,6 +4,7 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/utils/addressToCoord";
 import { pointInZones } from "@/utils/zoneCheck";
+import { Zone } from "@/types/zone"; // Use shared type
 
 // ---- Type definitions ----
 interface MenuItem {
@@ -17,13 +18,6 @@ interface MenuItem {
 
 interface CartItem extends MenuItem {
   quantity: number;
-}
-
-interface Zone {
-  id: number | string;
-  name: string;
-  active: boolean;
-  geojson: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
 }
 
 interface GeoPoint {
@@ -155,7 +149,10 @@ export default function MenuPage() {
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: Zone[]) => setZones(zones))
+      .then((zones: any[]) => setZones(zones.map(z => ({
+        ...z,
+        id: String(z.id),
+      }))))
       .catch(() => setZones([]));
   }, []);
 

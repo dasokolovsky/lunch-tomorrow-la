@@ -8,7 +8,17 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-export default function ZoneWindowsEditor({ windows, setWindows }) {
+interface WindowObj {
+  start: string;
+  end: string;
+}
+
+interface ZoneWindowsEditorProps {
+  windows: Record<string, WindowObj[]>;
+  setWindows: React.Dispatch<React.SetStateAction<Record<string, WindowObj[]>>>;
+}
+
+export default function ZoneWindowsEditor({ windows, setWindows }: ZoneWindowsEditorProps) {
   function handleTimeChange(day: string, idx: number, which: "start" | "end", value: string) {
     const updated = { ...windows };
     updated[day] = [...(updated[day] || [])];

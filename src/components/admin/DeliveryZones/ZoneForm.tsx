@@ -2,15 +2,7 @@ import React, { useState, useEffect } from "react";
 import ZoneWindowsEditor from "./ZoneWindowsEditor";
 import { normalizeZoneGeojson } from "@/utils/normalizeGeojson";
 import { findOverlappingZones, mergeZones } from "./geojsonUtils";
-
-// ---- Type Definitions ----
-interface Zone {
-  id?: string;
-  name: string;
-  geojson: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry | null;
-  windows: Record<string, { start: string; end: string }[]>;
-  active: boolean;
-}
+import { Zone } from "@/types/zone"; // <-- Import the shared Zone type
 
 interface ZoneFormProps {
   editingZone?: Zone | null;

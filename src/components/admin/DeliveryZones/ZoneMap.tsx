@@ -1,13 +1,7 @@
 import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-
-interface Zone {
-  id: string | number;
-  name: string;
-  active: boolean;
-  geojson?: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
-}
+import { Zone } from "@/types/zone"; // <-- Use shared Zone type
 
 interface ZoneMapProps {
   zones: Zone[];
@@ -15,6 +9,13 @@ interface ZoneMapProps {
 
 export default function ZoneMap({ zones }: ZoneMapProps) {
   useEffect(() => {
+    // Prevent multiple map inits on hot reload (optional)
+    const mapContainer = document.getElementById("admin-zones-map");
+    if (mapContainer && mapContainer._leaflet_id) {
+      // @ts-ignore
+      mapContainer._leaflet_id = null;
+    }
+
     const map = L.map("admin-zones-map").setView([37, -95], 4); // Center USA
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors'

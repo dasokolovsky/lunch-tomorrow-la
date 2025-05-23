@@ -6,11 +6,11 @@ import * as turf from "@turf/turf";
  */
 export function findOverlappingZones(
   newGeojson: turf.AllGeoJSON,
-  zones: { geojson: turf.AllGeoJSON }[]
+  zones: { geojson: turf.AllGeoJSON | null | undefined }[]
 ): number[] {
   return zones
     .map((zone, i) =>
-      turf.booleanOverlap(newGeojson, zone.geojson) ? i : -1
+      zone.geojson && turf.booleanOverlap(newGeojson, zone.geojson) ? i : -1
     )
     .filter(i => i !== -1);
 }
