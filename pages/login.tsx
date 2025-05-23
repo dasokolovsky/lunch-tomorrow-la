@@ -57,8 +57,16 @@ export default function LoginPage() {
       if (user?.id) {
         await ensureUserProfileExists(user.id);
       }
-      // Success! Reload or redirect as desired
-      router.push("/");
+      // Redirect based on cart contents
+      let cart: any[] = [];
+      try {
+        cart = JSON.parse(localStorage.getItem("cart") || "[]");
+      } catch {}
+      if (cart.length > 0) {
+        router.push("/checkout");
+      } else {
+        router.push("/menu");
+      }
     }
     setLoading(false);
   }
