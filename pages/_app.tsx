@@ -1,3 +1,4 @@
+import "@/styles/globals.css"; // or "../styles/globals.css" if that's your path
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 

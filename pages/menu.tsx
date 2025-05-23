@@ -4,6 +4,22 @@ import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/utils/addressToCoord";
 import { pointInZones } from "@/utils/zoneCheck";
+import { HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
+import Image from "next/image";
+
+// MUI imports
+import Button from "@mui/material/Button";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardMedia from "@mui/material/CardMedia";
+import Typography from "@mui/material/Typography";
+import Radio from "@mui/material/Radio";
+import RadioGroup from "@mui/material/RadioGroup";
+import FormControlLabel from "@mui/material/FormControlLabel";
 
 // Dynamically import Leaflet map, SSR disabled
 const LeafletMap = dynamic(() => import("@/components/LeafletMapUser"), { ssr: false });
@@ -32,23 +48,88 @@ function Toast({ message, onClose }: { message: string, onClose: () => void }) {
     return () => clearTimeout(timeout);
   }, [onClose]);
   return (
-    <div style={{
-      position: "fixed",
-      left: "50%",
-      bottom: 90,
-      transform: "translateX(-50%)",
-      background: "#222",
-      color: "#fff",
-      padding: "12px 28px",
-      borderRadius: 24,
-      fontWeight: 600,
-      fontSize: 16,
-      boxShadow: "0 2px 16px #0003",
-      zIndex: 2000,
-      opacity: 0.98,
-    }}>
+    <div className="fixed left-1/2 bottom-24 -translate-x-1/2 bg-neutral-900 text-white px-7 py-3 rounded-3xl font-semibold text-lg shadow-lg z-[2000] opacity-98">
       {message}
     </div>
+  );
+}
+
+// --- Modal for Delivery Zone using MUI Dialog ---
+function DeliveryZoneModal({
+  isOpen,
+  onClose,
+  onCheck,
+  address,
+  setAddress,
+  zoneError,
+  eligibleZone,
+  userLoc,
+  zones,
+  selectedWindow,
+  setSelectedWindow,
+  checking,
+}: any) {
+  const windows = eligibleZone?.windows || [];
+  return (
+    <Dialog open={isOpen} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle className="bg-blue-600 text-white">Check Delivery Availability</DialogTitle>
+      <DialogContent>
+        <form onSubmit={onCheck} className="flex flex-col gap-3 mt-2">
+          <input
+            className="border border-gray-300 rounded px-4 py-2 focus:ring-2 focus:ring-blue-300"
+            placeholder="Enter your address"
+            value={address}
+            onChange={e => setAddress(e.target.value)}
+            required
+          />
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            disabled={checking}
+            sx={{ mt: 1 }}
+          >
+            {checking ? "Checking..." : "Check"}
+          </Button>
+        </form>
+        {(zoneError || eligibleZone) && (
+          <div className="mt-4 flex items-center gap-2 text-lg" style={{ color: eligibleZone ? "#16a34a" : "#dc2626" }}>
+            {eligibleZone ? <HiCheckCircle className="text-green-500 text-2xl" /> : <HiExclamationCircle className="text-red-500 text-2xl" />}
+            <span>
+              {eligibleZone
+                ? <>Eligible for delivery in <b>{eligibleZone.name}</b></>
+                : zoneError}
+            </span>
+          </div>
+        )}
+        {(zoneError || eligibleZone) && (
+          <div className="my-4">
+            <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone?.id || null} />
+          </div>
+        )}
+        {eligibleZone && windows.length > 0 && (
+          <div className="mt-4">
+            <div className="font-semibold mb-2">Choose a delivery window:</div>
+            <RadioGroup
+              value={selectedWindow ?? ""}
+              onChange={(_, v) => setSelectedWindow(Number(v))}
+            >
+              {windows.map((win: any, i: number) => (
+                <FormControlLabel
+                  key={i}
+                  value={i}
+                  control={<Radio color="primary" />}
+                  label={`${win.start} – ${win.end}`}
+                />
+              ))}
+            </RadioGroup>
+          </div>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose} color="secondary">Close</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 
@@ -61,12 +142,16 @@ export default function MenuPage() {
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
-  // Delivery zone eligibility
+  // Delivery zone modal state
+  const [modalOpen, setModalOpen] = useState(false);
   const [address, setAddress] = useState("");
   const [zones, setZones] = useState<any[]>([]);
   const [userLoc, setUserLoc] = useState<{ lat: number, lon: number } | null>(null);
   const [eligibleZone, setEligibleZone] = useState<any | null>(null);
   const [zoneError, setZoneError] = useState("");
+  const [selectedWindow, setSelectedWindow] = useState<number | null>(null);
+  const [checking, setChecking] = useState(false);
+
   // UX improvements
   const [toast, setToast] = useState<string | null>(null);
   const [cartBump, setCartBump] = useState(false);
@@ -138,9 +223,12 @@ export default function MenuPage() {
     setZoneError("");
     setEligibleZone(null);
     setUserLoc(null);
+    setSelectedWindow(null);
+    setChecking(true);
 
     if (!address.trim()) {
       setZoneError("Please enter your delivery address.");
+      setChecking(false);
       return;
     }
 
@@ -148,12 +236,14 @@ export default function MenuPage() {
     try {
       loc = await geocodeAddress(address);
     } catch (err: any) {
-  console.error(err);
-  setZoneError("Could not look up your address.");
-  return;
-}
+      console.error(err);
+      setZoneError("Could not look up your address.");
+      setChecking(false);
+      return;
+    }
     if (!loc) {
       setZoneError("Could not find that address.");
+      setChecking(false);
       return;
     }
     setUserLoc(loc);
@@ -164,10 +254,12 @@ export default function MenuPage() {
     if (zone) {
       setEligibleZone(zone);
       setZoneError("");
+      setSelectedWindow(null);
     } else {
       setEligibleZone(null);
       setZoneError("Sorry, you are outside of our delivery area.");
     }
+    setChecking(false);
   }
 
   function addToCart(item: any) {
@@ -195,224 +287,119 @@ export default function MenuPage() {
   const canOrder = eligibleZone !== null;
 
   return (
-    <div
-      style={{
-        maxWidth: 900,
-        margin: "0 auto",
-        padding: "32px 16px",
-        fontFamily: "system-ui, sans-serif",
-      }}
-    >
-      <h1
-        style={{
-          fontSize: 36,
-          textAlign: "center",
-          marginBottom: 12,
-          letterSpacing: 1,
-          color: "#0070f3",
-        }}
-      >
-        Today&apos;s Lunch Menu
-      </h1>
-      <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
-        {getTodayISO()}
-      </p>
-      {/* Delivery zone eligibility checker */}
-      <form
-        onSubmit={handleCheckZone}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginBottom: 24,
-          gap: 8,
-          maxWidth: 420,
-          margin: "0 auto 32px auto",
-        }}
-      >
-        <label style={{ fontWeight: 500 }}>
-          Enter delivery address:
-          <input
-            value={address}
-            onChange={e => setAddress(e.target.value)}
-            placeholder="123 Main St, City, State"
-            required
-            style={{
-              marginLeft: 12,
-              padding: "6px 10px",
-              border: "1px solid #bbb",
-              borderRadius: 4,
-              width: 220,
-            }}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-pink-50 font-sans">
+      {/* Hero */}
+      <div className="relative overflow-hidden rounded-3xl mb-12 shadow-xl max-w-5xl mx-auto mt-8">
+        {/* Background image with gradient overlay */}
+        <div className="absolute inset-0 z-0">
+          <Image 
+            src="/images/hero-food-bg.jpg" 
+            alt="Background" 
+            fill 
+            className="object-cover brightness-90"
           />
-        </label>
-        <button
-          type="submit"
-          style={{
-            marginTop: 8,
-            background: "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            padding: "8px 18px",
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: "pointer",
-          }}
-        >
-          Check Delivery Eligibility
-        </button>
-      </form>
-      {/* Zone feedback/map */}
-      {zoneError && (
-        <div style={{
-          background: "#ffe0e0",
-          color: "#a33",
-          border: "1px solid #f99",
-          borderRadius: 8,
-          padding: "12px 16px",
-          margin: "16px auto",
-          maxWidth: 420,
-          textAlign: "center",
-        }}>
-          {zoneError}
-          <LeafletMap zones={zones} userLoc={userLoc} highlightZone={null} />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-600/70 via-pink-400/40 to-transparent" />
         </div>
-      )}
-      {eligibleZone && (
-        <div style={{
-          background: "#e6ffe9",
-          color: "#165c2e",
-          border: "1px solid #81e2a0",
-          borderRadius: 8,
-          padding: "12px 16px",
-          margin: "16px auto",
-          maxWidth: 420,
-          textAlign: "center",
-        }}>
-          You&apos;re eligible for delivery in zone: <b>{eligibleZone.name}</b>
-          <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone.id} />
+        <div className="relative z-10 py-16 px-8 text-center">
+          <div className="inline-block rounded-full bg-white/90 p-2 mb-6 shadow-lg">
+            <Image src="/images/logo.png" alt="Logo" width={60} height={60} className="rounded-full" />
+          </div>
+          <h1 className="text-5xl font-extrabold text-white mb-2 drop-shadow-lg tracking-tight">
+            Today&apos;s Lunch Menu
+          </h1>
+          <p className="text-xl text-white/90 mb-6">{getTodayISO()}</p>
+          <Button
+            variant="contained"
+            color="secondary"
+            size="large"
+            onClick={() => setModalOpen(true)}
+            sx={{ borderRadius: 999, fontWeight: 600, px: 4, py: 1.5, boxShadow: 3 }}
+          >
+            Check Delivery
+          </Button>
         </div>
-      )}
-      {error && (
-        <div
-          style={{
-            background: "#ffe0e0",
-            color: "#a33",
-            border: "1px solid #f99",
-            borderRadius: 8,
-            padding: "12px 16px",
-            margin: "16px auto",
-            maxWidth: 420,
-            textAlign: "center",
-          }}
-        >
-          {error}
-        </div>
-      )}
-      {loading ? (
-        <div style={{ textAlign: "center", width: "100%" }}>Loading…</div>
-      ) : menuItems.length === 0 && !error ? (
-        <div
-          style={{
-            color: "#888",
-            fontSize: 18,
-            textAlign: "center",
-            width: "100%",
-          }}
-        >
-          No menu available for today.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "2rem",
-            justifyItems: "center",
-            alignItems: "stretch",
-          }}
-        >
-          {menuItems.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                background: "#fff",
-                border: "1px solid #eee",
-                borderRadius: 14,
-                boxShadow: "0 2px 9px rgba(0,0,0,0.05)",
-                padding: 20,
-                width: 280,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                position: "relative",
-                transition: "box-shadow 0.2s, transform 0.12s",
-                minHeight: 180,
-                height: "100%",
-              }}
-              tabIndex={0}
-              onKeyDown={e => (e.key === "Enter" || e.key === " ") && canOrder && addToCart(item)}
-            >
-              <h2
-                style={{
-                  margin: "8px 0 4px 0",
-                  fontSize: 21,
-                  color: "#222",
-                  textAlign: "center",
-                  fontWeight: 600,
-                  letterSpacing: 0.1,
-                }}
+      </div>
+
+      {/* Delivery Zone Modal */}
+      <DeliveryZoneModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCheck={handleCheckZone}
+        address={address}
+        setAddress={setAddress}
+        zoneError={zoneError}
+        eligibleZone={eligibleZone}
+        userLoc={userLoc}
+        zones={zones}
+        selectedWindow={selectedWindow}
+        setSelectedWindow={setSelectedWindow}
+        checking={checking}
+      />
+
+      {/* Menu grid section with background */}
+      <section className="bg-white/80 rounded-3xl shadow-inner max-w-6xl mx-auto px-4 py-12 mb-16">
+        {error ? (
+          <div className="bg-red-100 text-red-700 border border-red-300 rounded-lg p-3 my-4 max-w-md mx-auto text-center">
+            {error}
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center justify-center py-20">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-pink-500 mb-4"></div>
+            <p className="text-gray-500 text-lg">Loading today&apos;s menu...</p>
+          </div>
+        ) : menuItems.length === 0 ? (
+          <div className="text-gray-400 text-lg text-center w-full">
+            No menu available for today.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-10 justify-items-center items-stretch">
+            {menuItems.map((item) => (
+              <Card
+                key={item.id}
+                className="rounded-2xl shadow-lg overflow-hidden transform transition duration-300 hover:scale-105 hover:shadow-2xl border border-gray-100 flex flex-col h-full"
+                sx={{ display: "flex", flexDirection: "column", height: "100%" }}
               >
-                {item.name}
-              </h2>
-              <div
-                style={{
-                  color: "#444",
-                  fontSize: 15,
-                  marginBottom: 10,
-                  textAlign: "center",
-                  minHeight: 36,
-                }}
-              >
-                {item.description}
-              </div>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "#0070f3",
-                  marginTop: "auto",
-                  letterSpacing: 0.5,
-                  marginBottom: 8,
-                }}
-              >
-                ${(item.price_cents / 100).toFixed(2)}
-              </div>
-              <button
-                onClick={() => canOrder && addToCart(item)}
-                style={{
-                  marginTop: 6,
-                  background: canOrder ? "#0070f3" : "#ddd",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "10px 24px",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: canOrder ? "pointer" : "not-allowed",
-                  opacity: canOrder ? 1 : 0.6,
-                  transition: "background 0.2s, transform 0.12s",
-                }}
-                disabled={!canOrder}
-                title={!canOrder ? "Enter your address and check delivery eligibility first" : undefined}
-              >
-                Add to Cart
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+                <CardMedia
+                  component="img"
+                  height="140"
+                  image={item.image_url || "/images/food-placeholder.jpg"}
+                  alt={item.name}
+                  sx={{ objectFit: "cover" }}
+                />
+                <CardContent sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                  <Typography gutterBottom variant="h6" component="div" className="font-bold text-gray-800">
+                    {item.name}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" className="mb-3 flex-grow">
+                    {item.description}
+                  </Typography>
+                  <div className="flex items-center justify-between mt-auto">
+                    <Typography variant="h6" color="secondary" className="font-bold">
+                      ${(item.price_cents / 100).toFixed(2)}
+                    </Typography>
+                    <Button
+                      onClick={() => canOrder && addToCart(item)}
+                      disabled={!canOrder}
+                      variant="contained"
+                      color="secondary"
+                      sx={{
+                        borderRadius: 999,
+                        fontWeight: 600,
+                        px: 3,
+                        py: 1,
+                        boxShadow: 2,
+                        opacity: canOrder ? 1 : 0.5,
+                      }}
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </section>
 
       {/* Toast for add-to-cart */}
       {toast && (
@@ -422,84 +409,32 @@ export default function MenuPage() {
         />
       )}
 
-      {/* Floating Cart Button - sticky for mobile, floating for desktop */}
+      {/* Floating Cart Button */}
       {hasMounted && cart.length > 0 && (
-        <button
+        <Button
           onClick={goToCart}
-          style={{
-            position: "fixed",
-            right: 24,
-            bottom: 24,
-            left: "unset",
-            background: "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: 60,
-            height: 60,
-            fontSize: 22,
-            fontWeight: 700,
-            boxShadow: "0 2px 10px rgba(0,112,243,0.12)",
-            cursor: "pointer",
-            zIndex: 1000,
+          variant="contained"
+          color="secondary"
+          className="fixed bottom-6 right-6 shadow-2xl rounded-full z-50"
+          sx={{
+            borderRadius: "999px",
+            fontWeight: 600,
+            px: 4,
+            py: 2,
+            boxShadow: 6,
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
-            transition: "transform 0.18s cubic-bezier(.45,1.8,.6,1)",
-            transform: cartBump ? "scale(1.13)" : "none",
+            gap: 1,
+            fontSize: "1.2rem",
           }}
-          aria-label="View cart"
         >
-          🛒
-          <span
-            style={{
-              position: "absolute",
-              top: 10,
-              right: 10,
-              background: "#fff",
-              color: "#0070f3",
-              borderRadius: "50%",
-              width: 22,
-              height: 22,
-              fontSize: 14,
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px solid #0070f3",
-              boxShadow: cartBump ? "0 0 0 5px #0070f33a" : undefined,
-              transition: "box-shadow 0.18s cubic-bezier(.45,1.8,.6,1)",
-            }}
-          >
+          <span role="img" aria-label="cart" className="mr-2">🛒</span>
+          View Cart
+          <span className="bg-white text-pink-500 rounded-full w-6 h-6 inline-flex items-center justify-center font-bold text-sm ml-2">
             {cart.reduce((sum, item) => sum + item.quantity, 0)}
           </span>
-        </button>
+        </Button>
       )}
-
-      {/* Sticky cart button for mobile (shows at the bottom if screen width < 600px) */}
-      <style>
-        {`
-          @media (max-width: 600px) {
-            button[aria-label="View cart"] {
-              right: 16px !important;
-              left: 16px !important;
-              width: calc(100vw - 32px) !important;
-              max-width: 440px;
-              border-radius: 32px !important;
-              height: 54px !important;
-              font-size: 19px;
-              bottom: 14px !important;
-              justify-content: center !important;
-            }
-            button[aria-label="View cart"] > span {
-              position: static !important;
-              margin-left: 10px;
-              margin-top: 0;
-              border-width: 1.5px;
-            }
-          }
-        `}
-      </style>
     </div>
   );
 }
