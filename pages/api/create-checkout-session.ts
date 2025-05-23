@@ -1,16 +1,25 @@
-import { NextApiRequest, NextApiResponse } from "next";
+import type { NextApiRequest, NextApiResponse } from "next";
 import Stripe from "stripe";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string, {
   apiVersion: "2023-10-16",
 });
 
+interface CartItem {
+  id: number;
+  name: string;
+  description: string;
+  price_cents: number;
+  quantity: number;
+  image_url?: string | null;
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const { cart } = req.body;
+  const { cart }: { cart: CartItem[] } = req.body;
 
   if (!Array.isArray(cart) || cart.length === 0) {
     return res.status(400).json({ error: "Cart is empty" });
@@ -37,7 +46,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     res.status(200).json({ url: session.url });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    if (error instanceof Error) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: "Unknown error" });
+    }
   }
 }

@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 
-type User = {
+interface User {
   id: string;
   phone: string | null;
-};
+}
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -29,8 +29,12 @@ export default function AdminUsersPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Unknown error");
       setUsers((json.users || []).filter((u: User) => !!u.phone));
-    } catch (err: any) {
-      setError("Error fetching users: " + err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError("Error fetching users: " + err.message);
+      } else {
+        setError("Error fetching users.");
+      }
       setUsers([]);
     }
     setLoading(false);
@@ -53,7 +57,7 @@ export default function AdminUsersPage() {
     setSuccess(null);
     try {
       const selectedUsers = users.filter(u => selected.includes(u.id));
-      const phones = selectedUsers.map(u => u.phone).filter(Boolean);
+      const phones = selectedUsers.map(u => u.phone).filter((p): p is string => Boolean(p));
       const res = await fetch("/api/send-sms-blast", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -66,8 +70,12 @@ export default function AdminUsersPage() {
       setSelectAll(false);
       setMessage("");
       fetchUsers();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError("Failed to send SMS.");
+      }
     }
     setSending(false);
     setConfirmationOpen(false);
@@ -151,7 +159,7 @@ export default function AdminUsersPage() {
         boxShadow: "0 2px 18px rgba(0,0,0,0.06)",
         padding: "24px 24px 16px 24px"
       }}>
-        <h2 style={{marginTop: 0, marginBottom: 16, fontSize: 22, color: "#0070f3"}}>Send SMS Blast</h2>
+        <h2 style={{ marginTop: 0, marginBottom: 16, fontSize: 22, color: "#0070f3" }}>Send SMS Blast</h2>
         <textarea
           value={message}
           onChange={e => setMessage(e.target.value)}
@@ -167,7 +175,7 @@ export default function AdminUsersPage() {
             resize: "vertical"
           }}
         />
-        <div style={{display: "flex", gap: 10, alignItems: "center"}}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button
             disabled={selected.length === 0 || !message || sending}
             style={{
@@ -185,7 +193,7 @@ export default function AdminUsersPage() {
           >
             Send SMS
           </button>
-          <span style={{color: "#888", fontSize: 14}}>
+          <span style={{ color: "#888", fontSize: 14 }}>
             {selected.length} user{selected.length === 1 ? "" : "s"} selected
           </span>
         </div>
@@ -210,7 +218,7 @@ export default function AdminUsersPage() {
               }}
             >×</button>
             <h3 style={{ marginTop: 0, marginBottom: 18 }}>Confirm SMS Blast</h3>
-            <div style={{marginBottom: 16}}>
+            <div style={{ marginBottom: 16 }}>
               Send the following message to <b>{selected.length}</b> user{selected.length === 1 ? "" : "s"}?
               <div style={{
                 margin: "18px 0",

@@ -1,7 +1,17 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { useRouter } from "next/router";
 
-function loadCart() {
+// --- Type Definitions ---
+interface CartItem {
+  id: number;
+  name: string;
+  description: string;
+  price_cents: number;
+  image_url?: string | null;
+  quantity: number;
+}
+
+function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -10,12 +20,12 @@ function loadCart() {
   }
 }
 
-function saveCart(cart: any[]) {
+function saveCart(cart: CartItem[]): void {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 export default function CartPage() {
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const router = useRouter();
@@ -57,7 +67,6 @@ export default function CartPage() {
   }
 
   function goToCheckout() {
-    // Go to the integrated checkout page (Stripe Elements)
     router.push("/checkout");
   }
 
@@ -123,6 +132,7 @@ export default function CartPage() {
                   <td style={{ padding: "8px", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {item.image_url && item.image_url.trim() !== "" && (
+                        // You can switch to "next/image" for even better optimization
                         <img
                           src={item.image_url}
                           alt={item.name}
@@ -142,7 +152,7 @@ export default function CartPage() {
                       type="number"
                       value={item.quantity}
                       min={1}
-                      onChange={(e) =>
+                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
                         updateQuantity(item.id, Number(e.target.value))
                       }
                       style={{

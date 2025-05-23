@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import { supabase } from "@/utils/supabaseClient";
 
 const USER_TABLE = "profiles";
 
-type Order = {
+// --- Type Definitions ---
+interface MenuItemInOrder {
+  id: number;
+  name: string;
+  quantity: number;
+  price_cents?: number;
+}
+
+interface Order {
   id: number;
   user_id: string;
-  menu_items: any[];
+  menu_items: MenuItemInOrder[];
   order_date: string;
   delivery_window: string;
   address: string;
@@ -16,18 +24,17 @@ type Order = {
   created_at: string;
   lat?: string;
   lon?: string;
-  [key: string]: any;
-};
-type User = {
+}
+
+interface User {
   id: string;
   email?: string;
   full_name?: string;
-  [key: string]: any;
-};
+}
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
-  const [users, setUsers] = useState<{[id: string]: User}>({});
+  const [users, setUsers] = useState<{ [id: string]: User }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -64,7 +71,7 @@ export default function AdminOrdersPage() {
         setLoading(false);
         return;
       }
-      setOrders(ordersData || []);
+      setOrders((ordersData || []) as Order[]);
 
       // Fetch users for all unique user_ids
       const userIds = Array.from(new Set((ordersData || []).map((o: Order) => o.user_id)));
@@ -73,7 +80,7 @@ export default function AdminOrdersPage() {
           .from(USER_TABLE)
           .select("id,email,full_name")
           .in("id", userIds);
-        const userMap: {[id: string]: User} = {};
+        const userMap: { [id: string]: User } = {};
         (usersData || []).forEach((u: User) => { userMap[u.id] = u; });
         setUsers(userMap);
       } else {
@@ -100,13 +107,13 @@ export default function AdminOrdersPage() {
       .update({ status: newStatus })
       .eq("id", orderId);
     if (!updateError) {
-      setOrders(orders => orders.map(o => o.id === orderId ? {...o, status: newStatus} : o));
+      setOrders(orders => orders.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
     }
     setUpdatingOrderId(null);
   }
 
   return (
-    <div style={{maxWidth: 1300, margin: "0 auto", padding: 40}}>
+    <div style={{ maxWidth: 1300, margin: "0 auto", padding: 40 }}>
       <h1>Orders Admin</h1>
 
       {/* Filters */}
@@ -160,7 +167,7 @@ export default function AdminOrdersPage() {
       {loading ? (
         <p>Loading...</p>
       ) : (
-        <table style={{width: "100%", borderCollapse: "collapse"}}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
               <th>ID</th>
@@ -188,12 +195,12 @@ export default function AdminOrdersPage() {
                   {order.address}
                   {order.lat && order.lon && (
                     <span>
-                      <br/>
+                      <br />
                       <a
                         href={`https://www.openstreetmap.org/?mlat=${order.lat}&mlon=${order.lon}#map=18/${order.lat}/${order.lon}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        style={{fontSize: 12, color: "#0070f3"}}
+                        style={{ fontSize: 12, color: "#0070f3" }}
                       >
                         Map
                       </a>
@@ -208,7 +215,7 @@ export default function AdminOrdersPage() {
                       <select
                         value={order.status}
                         onChange={e => handleStatusChange(order.id, e.target.value)}
-                        style={{minWidth: 90}}
+                        style={{ minWidth: 90 }}
                       >
                         {["paid", "preparing", "delivering", "delivered", "cancelled"].map(s =>
                           <option key={s} value={s}>{s}</option>
@@ -258,7 +265,7 @@ export default function AdminOrdersPage() {
                   href={`https://www.openstreetmap.org/?mlat=${viewOrder.lat}&mlon=${viewOrder.lon}#map=18/${viewOrder.lat}/${viewOrder.lon}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{fontSize: 12, color: "#0070f3"}}
+                  style={{ fontSize: 12, color: "#0070f3" }}
                 >
                   (Map)
                 </a>
@@ -278,7 +285,7 @@ export default function AdminOrdersPage() {
               </ul>
             </div>
             <p><b>Created At:</b> {viewOrder.created_at}</p>
-            <button onClick={() => setViewOrder(null)} style={{marginTop: 16}}>Close</button>
+            <button onClick={() => setViewOrder(null)} style={{ marginTop: 16 }}>Close</button>
           </div>
         </div>
       )}

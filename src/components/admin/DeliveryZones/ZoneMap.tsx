@@ -2,7 +2,18 @@ import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-export default function ZoneMap({ zones }) {
+interface Zone {
+  id: string | number;
+  name: string;
+  active: boolean;
+  geojson?: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
+}
+
+interface ZoneMapProps {
+  zones: Zone[];
+}
+
+export default function ZoneMap({ zones }: ZoneMapProps) {
   useEffect(() => {
     const map = L.map("admin-zones-map").setView([37, -95], 4); // Center USA
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -23,7 +34,7 @@ export default function ZoneMap({ zones }) {
         .filter(z => z.geojson)
         .map(z => L.geoJSON(z.geojson));
       if (allLayers.length) {
-        const group = L.featureGroup(allLayers.map(l => l));
+        const group = L.featureGroup(allLayers);
         map.fitBounds(group.getBounds());
       }
     }

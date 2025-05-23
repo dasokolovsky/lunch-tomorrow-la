@@ -4,6 +4,32 @@
  * Ensures polygons are closed (first and last coordinates equal).
  */
 
+type PolygonGeometry = {
+  type: "Polygon";
+  coordinates: number[][][];
+};
+
+type MultiPolygonGeometry = {
+  type: "MultiPolygon";
+  coordinates: number[][][][];
+};
+
+type FeatureGeometry = PolygonGeometry | MultiPolygonGeometry;
+
+type Feature = {
+  type: "Feature";
+  geometry: FeatureGeometry;
+  [key: string]: unknown;
+};
+
+type FeatureCollection = {
+  type: "FeatureCollection";
+  features: Feature[];
+  [key: string]: unknown;
+};
+
+type InputGeoJson = FeatureCollection | Feature | FeatureGeometry;
+
 function closePolygonIfNeeded(coords: number[][]): number[][] {
   if (
     coords.length > 2 &&
@@ -15,34 +41,36 @@ function closePolygonIfNeeded(coords: number[][]): number[][] {
   return coords;
 }
 
-export function normalizeZoneGeojson(rawGeoJson: any): any | null {
+export function normalizeZoneGeojson(rawGeoJson: InputGeoJson | null | undefined): FeatureGeometry | null {
   if (!rawGeoJson) return null;
+
+  let geoObj: any = rawGeoJson;
 
   // If FeatureCollection, use the first Feature
   if (
-    rawGeoJson.type === "FeatureCollection" &&
-    Array.isArray(rawGeoJson.features) &&
-    rawGeoJson.features.length > 0
+    geoObj.type === "FeatureCollection" &&
+    Array.isArray(geoObj.features) &&
+    geoObj.features.length > 0
   ) {
-    rawGeoJson = rawGeoJson.features[0];
+    geoObj = geoObj.features[0];
   }
 
   // If Feature, extract geometry
-  if (rawGeoJson.type === "Feature" && rawGeoJson.geometry) {
-    rawGeoJson = rawGeoJson.geometry;
+  if (geoObj.type === "Feature" && geoObj.geometry) {
+    geoObj = geoObj.geometry;
   }
 
   // Only allow Polygon or MultiPolygon
-  if (rawGeoJson.type === "Polygon") {
+  if (geoObj.type === "Polygon") {
     // Ensure all rings are closed
-    rawGeoJson.coordinates = rawGeoJson.coordinates.map(closePolygonIfNeeded);
-    return rawGeoJson;
+    geoObj.coordinates = geoObj.coordinates.map(closePolygonIfNeeded);
+    return geoObj as PolygonGeometry;
   }
-  if (rawGeoJson.type === "MultiPolygon") {
-    rawGeoJson.coordinates = rawGeoJson.coordinates.map(polygon =>
+  if (geoObj.type === "MultiPolygon") {
+    geoObj.coordinates = geoObj.coordinates.map((polygon: number[][][]) =>
       polygon.map(closePolygonIfNeeded)
     );
-    return rawGeoJson;
+    return geoObj as MultiPolygonGeometry;
   }
   return null;
 }
