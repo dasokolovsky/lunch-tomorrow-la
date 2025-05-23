@@ -9,6 +9,7 @@ interface Zone {
   name: string;
   geojson?: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
   active: boolean;
+  windows: Record<string, { start: string; end: string }[]>; // <-- ensure present
   [key: string]: unknown;
 }
 
@@ -19,15 +20,27 @@ export default function DeliveryZonesAdminPage() {
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then(setZones);
+      .then((zones: Zone[]) =>
+        setZones(zones.map(z => ({
+          ...z,
+          windows: z.windows ?? {}
+        })))
+      );
   }, []);
 
   function handleEdit(zone: Zone) {
-    setEditingZone(zone);
+    setEditingZone({ ...zone, windows: zone.windows ?? {} });
   }
   function handleDone() {
     setEditingZone(null);
-    fetch("/api/delivery-zones").then(r => r.json()).then(setZones);
+    fetch("/api/delivery-zones")
+      .then(r => r.json())
+      .then((zones: Zone[]) =>
+        setZones(zones.map(z => ({
+          ...z,
+          windows: z.windows ?? {}
+        })))
+      );
   }
 
   return (
