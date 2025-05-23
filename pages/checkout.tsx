@@ -60,7 +60,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  // Removed unused 'success' and setSuccess
   const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   // Order info
@@ -257,7 +257,6 @@ export default function CheckoutPage() {
         setLoading(false);
         return;
       }
-      setSuccess(true);
       localStorage.removeItem("cart");
       setLoading(false);
       router.push("/success");
@@ -305,7 +304,6 @@ export default function CheckoutPage() {
       return;
     }
 
-    setSuccess(true);
     localStorage.removeItem("cart");
     setLoading(false);
     router.push("/success");

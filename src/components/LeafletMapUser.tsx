@@ -2,7 +2,26 @@ import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-export default function LeafletMapUser({ zones, userLoc, highlightZone }) {
+// ---- Type Definitions ----
+interface Zone {
+  id: number | string;
+  name: string;
+  active: boolean;
+  geojson?: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
+}
+
+interface GeoPoint {
+  lat: number;
+  lon: number;
+}
+
+interface Props {
+  zones: Zone[];
+  userLoc: GeoPoint | null;
+  highlightZone: number | string | null;
+}
+
+export default function LeafletMapUser({ zones, userLoc, highlightZone }: Props) {
   useEffect(() => {
     const map = L.map("user-map").setView([37, -95], 4);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -22,7 +41,8 @@ export default function LeafletMapUser({ zones, userLoc, highlightZone }) {
     });
 
     if (userLoc) {
-      const marker = L.marker([userLoc.lat, userLoc.lon], {
+      // Remove marker assignment since it was unused (lint error)
+      L.marker([userLoc.lat, userLoc.lon], {
         title: "Your Address"
       }).addTo(map);
       map.setView([userLoc.lat, userLoc.lon], 13);

@@ -3,9 +3,18 @@ import ZoneForm from "./ZoneForm";
 import dynamic from "next/dynamic";
 const ZoneMap = dynamic(() => import("./ZoneMap"), { ssr: false });
 
+// ---- Type Definitions ----
+interface Zone {
+  id: number | string;
+  name: string;
+  geojson?: GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry;
+  active: boolean;
+  [key: string]: unknown;
+}
+
 export default function DeliveryZonesAdminPage() {
-  const [zones, setZones] = useState<any[]>([]);
-  const [editingZone, setEditingZone] = useState<any|null>(null);
+  const [zones, setZones] = useState<Zone[]>([]);
+  const [editingZone, setEditingZone] = useState<Zone | null>(null);
 
   useEffect(() => {
     fetch("/api/delivery-zones")
@@ -13,7 +22,7 @@ export default function DeliveryZonesAdminPage() {
       .then(setZones);
   }, []);
 
-  function handleEdit(zone: any) {
+  function handleEdit(zone: Zone) {
     setEditingZone(zone);
   }
   function handleDone() {

@@ -44,30 +44,45 @@ function closePolygonIfNeeded(coords: number[][]): number[][] {
 export function normalizeZoneGeojson(rawGeoJson: InputGeoJson | null | undefined): FeatureGeometry | null {
   if (!rawGeoJson) return null;
 
-  let geoObj: any = rawGeoJson;
+  let geoObj: unknown = rawGeoJson;
 
   // If FeatureCollection, use the first Feature
   if (
-    geoObj.type === "FeatureCollection" &&
-    Array.isArray(geoObj.features) &&
-    geoObj.features.length > 0
+    typeof geoObj === "object" &&
+    geoObj !== null &&
+    (geoObj as FeatureCollection).type === "FeatureCollection" &&
+    Array.isArray((geoObj as FeatureCollection).features) &&
+    (geoObj as FeatureCollection).features.length > 0
   ) {
-    geoObj = geoObj.features[0];
+    geoObj = (geoObj as FeatureCollection).features[0];
   }
 
   // If Feature, extract geometry
-  if (geoObj.type === "Feature" && geoObj.geometry) {
-    geoObj = geoObj.geometry;
+  if (
+    typeof geoObj === "object" &&
+    geoObj !== null &&
+    (geoObj as Feature).type === "Feature" &&
+    (geoObj as Feature).geometry
+  ) {
+    geoObj = (geoObj as Feature).geometry;
   }
 
   // Only allow Polygon or MultiPolygon
-  if (geoObj.type === "Polygon") {
+  if (
+    typeof geoObj === "object" &&
+    geoObj !== null &&
+    (geoObj as { type?: string }).type === "Polygon"
+  ) {
     // Ensure all rings are closed
-    geoObj.coordinates = geoObj.coordinates.map(closePolygonIfNeeded);
+    (geoObj as PolygonGeometry).coordinates = (geoObj as PolygonGeometry).coordinates.map(closePolygonIfNeeded);
     return geoObj as PolygonGeometry;
   }
-  if (geoObj.type === "MultiPolygon") {
-    geoObj.coordinates = geoObj.coordinates.map((polygon: number[][][]) =>
+  if (
+    typeof geoObj === "object" &&
+    geoObj !== null &&
+    (geoObj as { type?: string }).type === "MultiPolygon"
+  ) {
+    (geoObj as MultiPolygonGeometry).coordinates = (geoObj as MultiPolygonGeometry).coordinates.map((polygon: number[][][]) =>
       polygon.map(closePolygonIfNeeded)
     );
     return geoObj as MultiPolygonGeometry;

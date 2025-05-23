@@ -143,12 +143,8 @@ export default function MenuPage() {
           setMenuItems((items ?? []) as MenuItem[]);
         }
         setLoading(false);
-      } catch (err) {
-        if (err instanceof Error) {
-          setError("Unexpected error: " + err.message);
-        } else {
-          setError("Unexpected error occurred.");
-        }
+      } catch {
+        setError("Unexpected error occurred.");
         setLoading(false);
       }
     }
@@ -177,7 +173,7 @@ export default function MenuPage() {
     let loc: GeoPoint | null = null;
     try {
       loc = await geocodeAddress(address);
-    } catch (err) {
+    } catch {
       setZoneError("Could not look up your address.");
       return;
     }

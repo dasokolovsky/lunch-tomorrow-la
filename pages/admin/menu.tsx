@@ -19,9 +19,9 @@ interface MenuItem {
 interface Zone {
   id: string | number;
   name: string;
-  geojson?: any;
+  geojson?: unknown;
   active: boolean;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 interface GeoPoint {
@@ -40,7 +40,7 @@ function getTodayISO() {
 function loadCart(): MenuItem[] {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem("cart") || "[]");
+    return JSON.parse(localStorage.getItem("cart") || "[]") as MenuItem[];
   } catch {
     return [];
   }

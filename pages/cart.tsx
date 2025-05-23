@@ -27,7 +27,7 @@ function saveCart(cart: CartItem[]): void {
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Removed setLoading since it is unused
   const [feedback, setFeedback] = useState<string | null>(null);
   const router = useRouter();
 
@@ -212,11 +212,9 @@ export default function CartPage() {
                 padding: "14px 38px",
                 fontWeight: 700,
                 fontSize: 18,
-                cursor: loading ? "not-allowed" : "pointer",
+                cursor: "pointer",
                 marginLeft: 12,
-                opacity: loading ? 0.6 : 1,
               }}
-              disabled={loading}
             >
               Checkout
             </button>
