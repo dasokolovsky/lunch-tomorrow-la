@@ -39,7 +39,7 @@ export default function CheckoutPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [, setSuccess] = useState(false);
   const [session, setSession] = useState<any>(undefined);
 
   // Order info

@@ -26,7 +26,7 @@ function saveCart(cart: CartItem[]) {
 
 export default function CartPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const router = useRouter();
 

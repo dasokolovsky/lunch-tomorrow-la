@@ -20,7 +20,7 @@ export function pointInZones(pt, zones) {
       if (turf.booleanPointInPolygon(pt, geo)) {
         return zone;
       }
-    } catch (e) {
+    } catch {
       continue;
     }
   }

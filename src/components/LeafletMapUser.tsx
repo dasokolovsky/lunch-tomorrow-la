@@ -22,7 +22,7 @@ export default function LeafletMapUser({ zones, userLoc, highlightZone }) {
     });
 
     if (userLoc) {
-      const marker = L.marker([userLoc.lat, userLoc.lon], {
+      L.marker([userLoc.lat, userLoc.lon], {
         title: "Your Address"
       }).addTo(map);
       map.setView([userLoc.lat, userLoc.lon], 13);

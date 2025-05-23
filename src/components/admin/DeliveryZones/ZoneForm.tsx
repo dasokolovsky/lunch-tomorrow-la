@@ -49,7 +49,7 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
         setGeojson(normalized);
         const overlapsIdx = findOverlappingZones(normalized, existingZones);
         setOverlaps(overlapsIdx);
-      } catch (err) {
+      } catch {
         alert("Invalid GeoJSON");
       }
     };
