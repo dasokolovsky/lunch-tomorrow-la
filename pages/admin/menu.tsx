@@ -1,467 +1,444 @@
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
-import { useRouter } from "next/router";
-import dynamic from "next/dynamic";
-import { geocodeAddress } from "@/utils/addressToCoord";
-import { pointInZones } from "@/utils/zoneCheck";
-import Image from "next/image";
-import { Zone } from "@/types/zone";
 
-// Data interfaces
-interface MenuItem {
+type MenuItem = {
   id: number;
+  menu_id: number;
   name: string;
   description: string;
   price_cents: number;
-  image_url?: string;
-  quantity?: number;
-}
+  image_url: string | null;
+  position: number;
+  menus: { date: string };
+};
 
-interface GeoPoint {
-  lat: number;
-  lon: number;
-}
+const emptyForm = {
+  id: null as number | null,
+  menu_date: "",
+  name: "",
+  description: "",
+  price_cents: "",
+  image_url: "",
+};
 
-// Dynamically import Leaflet map, SSR disabled
-const LeafletMap = dynamic(() => import("@/components/LeafletMapUser"), { ssr: false });
-
-function getTodayISO() {
-  const today = new Date();
-  return today.toISOString().substring(0, 10);
-}
-
-function loadCart(): MenuItem[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem("cart") || "[]") as MenuItem[];
-  } catch {
-    return [];
-  }
-}
-
-function saveCart(cart: MenuItem[]) {
-  localStorage.setItem("cart", JSON.stringify(cart));
-}
-
-export default function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+export default function AdminMenuTablePage() {
+  const [items, setItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editRowId, setEditRowId] = useState<number | null>(null);
+  const [form, setForm] = useState({ ...emptyForm });
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [filterDate, setFilterDate] = useState("");
+  const [saving, setSaving] = useState(false);
 
-  const [cart, setCart] = useState<MenuItem[]>([]);
-  const [hasMounted, setHasMounted] = useState(false);
-  const router = useRouter();
-
-  // Delivery zone eligibility
-  const [address, setAddress] = useState<string>("");
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [userLoc, setUserLoc] = useState<GeoPoint | null>(null);
-  const [eligibleZone, setEligibleZone] = useState<Zone | null>(null);
-  const [zoneError, setZoneError] = useState<string>("");
-
-  useEffect(() => {
-    setCart(loadCart());
-    setHasMounted(true);
-  }, []);
-
-  useEffect(() => {
-    saveCart(cart);
-  }, [cart]);
-
-  useEffect(() => {
-    async function fetchMenu() {
-      setLoading(true);
-      setError(null);
-      try {
-        const todayISO = getTodayISO();
-        const { data: menus, error: menuError } = await supabase
-          .from("menus")
-          .select("id, date")
-          .eq("date", todayISO)
-          .limit(1);
-
-        if (menuError) {
-          setError("Error fetching menu: " + menuError.message);
-          setLoading(false);
-          return;
-        }
-        if (!menus || menus.length === 0) {
-          setMenuItems([]);
-          setLoading(false);
-          return;
-        }
-        const menuId = menus[0].id;
-
-        const { data: items, error: itemsError } = await supabase
-          .from("menu_items")
-          .select("*")
-          .eq("menu_id", menuId)
-          .order("position");
-
-        if (itemsError) {
-          setError("Error fetching menu items: " + itemsError.message);
-          setMenuItems([]);
-        } else {
-          setMenuItems((items ?? []) as MenuItem[]);
-        }
-        setLoading(false);
-      } catch {
-        setError("Unexpected error occurred.");
-        setLoading(false);
-      }
+  // Fetch all menu items with their menu date
+  async function fetchItems() {
+    setLoading(true);
+    setError(null);
+    let query = supabase
+      .from("menu_items")
+      .select("id,menu_id,name,description,price_cents,image_url,position,menus(date)");
+    if (filterDate) {
+      query = query.eq("menus.date", filterDate);
     }
-    fetchMenu();
-  }, []);
-
-  // Fetch zones once on mount
-  useEffect(() => {
-    fetch("/api/delivery-zones")
-      .then(r => r.json())
-      .then((zones: unknown[]) =>
-        setZones(
-          zones.map((z) => ({
-            ...z,
-            id: String((z as { id: string | number }).id),
-          })) as Zone[]
-        )
-      )
-      .catch(() => setZones([]));
-  }, []);
-
-  async function handleCheckZone(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setZoneError("");
-    setEligibleZone(null);
-    setUserLoc(null);
-
-    if (!address.trim()) {
-      setZoneError("Please enter your delivery address.");
-      return;
+    if (search) {
+      query = query.ilike("name", `%${search}%`);
     }
-
-    let loc: GeoPoint | null = null;
-    try {
-      loc = await geocodeAddress(address);
-    } catch {
-      setZoneError("Could not look up your address.");
-      return;
-    }
-    if (!loc) {
-      setZoneError("Could not find that address.");
-      return;
-    }
-    setUserLoc(loc);
-
-    // Pass a GeoJSON Point to pointInZones (MUST be [lon, lat])
-    const point = { type: "Point", coordinates: [loc.lon, loc.lat] };
-    const zone = pointInZones(point, zones);
-    if (zone) {
-      setEligibleZone(zone);
-      setZoneError("");
+    const { data, error } = await query;
+    if (error) {
+      setError("Error loading menu items: " + error.message);
+      setItems([]);
     } else {
-      setEligibleZone(null);
-      setZoneError("Sorry, you are outside of our delivery area.");
+      // Sort by date descending (latest first), then by position ascending
+      const sorted = (data ?? [])
+        .sort((a, b) => {
+          const dateDiff = b.menus.date.localeCompare(a.menus.date);
+          if (dateDiff !== 0) return dateDiff;
+          return (a.position ?? 0) - (b.position ?? 0);
+        });
+      setItems(sorted);
     }
+    setLoading(false);
   }
 
-  function addToCart(item: MenuItem) {
-    setCart((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
-      if (existing) {
-        return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: (i.quantity ?? 1) + 1 } : i
-        );
-      } else {
-        return [...prev, { ...item, quantity: 1 }];
-      }
+  useEffect(() => {
+    fetchItems();
+    // eslint-disable-next-line
+  }, [filterDate, search]);
+
+  // Open modal for new item
+  function openAddModal() {
+    setForm({ ...emptyForm });
+    setModalOpen(true);
+    setEditRowId(null);
+    setError(null);
+  }
+
+  // Open modal for editing item
+  function openEditModal(item: MenuItem) {
+    setForm({
+      id: item.id,
+      menu_date: item.menus.date,
+      name: item.name,
+      description: item.description,
+      price_cents: String(item.price_cents),
+      image_url: item.image_url ?? "",
     });
+    setModalOpen(true);
+    setEditRowId(item.id);
+    setError(null);
   }
 
-  function goToCart() {
-    router.push("/cart");
+  // Handle save (add or update)
+  async function handleSave(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    setSaving(true);
+    setError(null);
+    // Validation
+    if (!form.menu_date || !form.name || !form.price_cents) {
+      setError("Menu date, name, and price are required.");
+      setSaving(false);
+      return;
+    }
+    if (!/^\d+$/.test(form.price_cents)) {
+      setError("Price must be a number of cents (e.g., 500 for $5.00).");
+      setSaving(false);
+      return;
+    }
+    // Find or create menu for date
+    let menuId: number | null = null;
+    const { data: foundMenus, error: findMenuErr } = await supabase
+      .from("menus")
+      .select("id")
+      .eq("date", form.menu_date)
+      .limit(1);
+    if (findMenuErr) {
+      setError("Error finding menu: " + findMenuErr.message);
+      setSaving(false);
+      return;
+    }
+    if (foundMenus && foundMenus.length > 0) {
+      menuId = foundMenus[0].id;
+    } else {
+      const { data: created, error: createErr } = await supabase
+        .from("menus")
+        .insert([{ date: form.menu_date }])
+        .select("id");
+      if (createErr) {
+        setError("Error creating menu for date: " + createErr.message);
+        setSaving(false);
+        return;
+      }
+      menuId = created?.[0]?.id ?? null;
+    }
+    if (!menuId) {
+      setError("Could not find or create menu for that date.");
+      setSaving(false);
+      return;
+    }
+
+    // Find next position for this menu_id
+    let nextPosition = 1;
+    if (!form.id) {
+      const { data: maxPosData, error: posErr } = await supabase
+        .from("menu_items")
+        .select("position")
+        .eq("menu_id", menuId)
+        .order("position", { ascending: false })
+        .limit(1);
+      if (!posErr && maxPosData && maxPosData.length > 0) {
+        nextPosition = (maxPosData[0].position ?? 0) + 1;
+      }
+    }
+
+    // Insert or update menu item
+    if (!form.id) {
+      const { error: insertErr } = await supabase.from("menu_items").insert([{
+        menu_id: menuId,
+        name: form.name,
+        description: form.description,
+        price_cents: Number(form.price_cents),
+        image_url: form.image_url,
+        position: nextPosition, // Always set position for new item
+      }]);
+      if (insertErr) {
+        setError("Error adding item: " + insertErr.message);
+        setSaving(false);
+        return;
+      }
+    } else {
+      const { error: updateErr } = await supabase
+        .from("menu_items")
+        .update({
+          menu_id: menuId,
+          name: form.name,
+          description: form.description,
+          price_cents: Number(form.price_cents),
+          image_url: form.image_url,
+        })
+        .eq("id", form.id);
+      if (updateErr) {
+        setError("Error updating item: " + updateErr.message);
+        setSaving(false);
+        return;
+      }
+    }
+    setModalOpen(false);
+    setEditRowId(null);
+    setForm({ ...emptyForm });
+    setSaving(false);
+    fetchItems();
   }
 
-  // Disable ordering if not eligible
-  const canOrder = eligibleZone !== null;
+  // Delete an item
+  async function handleDelete(id: number) {
+    if (!window.confirm("Delete this menu item?")) return;
+    const { error: delErr } = await supabase.from("menu_items").delete().eq("id", id);
+    if (delErr) {
+      setError("Error deleting item: " + delErr.message);
+      return;
+    }
+    fetchItems();
+  }
+
+  // Table render helpers
+  function renderRow(item: MenuItem) {
+    return (
+      <tr key={item.id}>
+        <td style={{ fontFamily: "monospace", fontSize: 15 }}>{item.menus.date}</td>
+        <td>{item.name}</td>
+        <td>{item.description}</td>
+        <td style={{ textAlign: "right" }}>${(item.price_cents / 100).toFixed(2)}</td>
+        <td>
+          {item.image_url ? (
+            <img
+              src={item.image_url}
+              alt={item.name}
+              style={{ width: 38, height: 38, objectFit: "cover", borderRadius: 4, border: "1px solid #eee" }}
+              onError={e => (e.currentTarget.style.display = "none")}
+            />
+          ) : null}
+        </td>
+        <td>
+          <button
+            style={{ marginRight: 6 }}
+            title="Edit"
+            onClick={() => openEditModal(item)}
+          >✏️</button>
+          <button
+            title="Delete"
+            style={{ color: "#c00" }}
+            onClick={() => handleDelete(item.id)}
+          >🗑️</button>
+        </td>
+      </tr>
+    );
+  }
+
+  // Modal form for add/edit
+  function renderModal() {
+    if (!modalOpen) return null;
+    return (
+      <div style={{
+        position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh",
+        background: "rgba(0,0,0,0.13)", zIndex: 2000, display: "flex", alignItems: "center", justifyContent: "center"
+      }}>
+        <div style={{
+          background: "#fff", borderRadius: 8, maxWidth: 400, width: "100%",
+          padding: 24, boxShadow: "0 8px 48px rgba(0,0,0,0.08)", position: "relative"
+        }}>
+          <button
+            aria-label="Close"
+            onClick={() => setModalOpen(false)}
+            style={{
+              position: "absolute", right: 16, top: 10, fontSize: 18, background: "none", border: "none", cursor: "pointer"
+            }}
+          >×</button>
+          <h3 style={{ marginTop: 0, marginBottom: 18 }}>
+            {form.id ? "Edit Menu Item" : "Add Menu Item"}
+          </h3>
+          <form onSubmit={handleSave} autoComplete="off">
+            <label style={{ display: "block", marginBottom: 10 }}>
+              Menu Date:
+              <input
+                type="date"
+                value={form.menu_date}
+                onChange={e => setForm(f => ({ ...f, menu_date: e.target.value }))}
+                required
+                style={{ width: "100%", marginTop: 2, padding: 7, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+            </label>
+            <label style={{ display: "block", marginBottom: 10 }}>
+              Name:
+              <input
+                value={form.name}
+                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                required
+                style={{ width: "100%", marginTop: 2, padding: 7, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+            </label>
+            <label style={{ display: "block", marginBottom: 10 }}>
+              Description:
+              <input
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                style={{ width: "100%", marginTop: 2, padding: 7, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+            </label>
+            <label style={{ display: "block", marginBottom: 10 }}>
+              Price (cents):
+              <input
+                type="number"
+                min={0}
+                value={form.price_cents}
+                onChange={e => setForm(f => ({ ...f, price_cents: e.target.value }))}
+                required
+                style={{ width: "100%", marginTop: 2, padding: 7, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+            </label>
+            <label style={{ display: "block", marginBottom: 16 }}>
+              Image URL:
+              <input
+                value={form.image_url}
+                onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                style={{ width: "100%", marginTop: 2, padding: 7, borderRadius: 4, border: "1px solid #ccc" }}
+              />
+            </label>
+            {error && (
+              <div style={{ color: "#b00", background: "#ffeaea", padding: 8, borderRadius: 4, marginBottom: 12 }}>
+                {error}
+              </div>
+            )}
+            <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
+              <button
+                type="button"
+                onClick={() => setModalOpen(false)}
+                style={{ background: "#eee", border: "1px solid #ccc", borderRadius: 5, padding: "7px 18px", cursor: "pointer" }}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                style={{
+                  background: "#0070f3", color: "#fff", border: "none", borderRadius: 5,
+                  padding: "7px 18px", fontWeight: 600, cursor: "pointer"
+                }}
+                disabled={saving}
+              >
+                {form.id ? "Save Changes" : "Add Item"}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Distinct menu dates for filtering
+  const allDates = Array.from(new Set(items.map(i => i.menus.date))).sort((a, b) => b.localeCompare(a));
 
   return (
     <div
       style={{
-        maxWidth: 900,
+        maxWidth: 1100,
         margin: "0 auto",
-        padding: "32px 16px",
+        padding: "42px 2vw 80px 2vw",
         fontFamily: "system-ui, sans-serif",
+        background: "#f8fafc",
+        minHeight: "100vh"
       }}
     >
-      <h1
-        style={{
-          fontSize: 36,
-          textAlign: "center",
-          marginBottom: 12,
-          letterSpacing: 1,
-          color: "#0070f3",
-        }}
-      >
-        Today&apos;s Lunch Menu
+      <h1 style={{ fontSize: 32, textAlign: "center", marginBottom: 18, letterSpacing: 1 }}>
+        <span style={{ color: "#0070f3" }}>Admin</span>: Menu Items
       </h1>
-      <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
-        {getTodayISO()}
-      </p>
-      {/* Delivery zone eligibility checker */}
-      <form
-        onSubmit={handleCheckZone}
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          marginBottom: 24,
-          gap: 8,
-          maxWidth: 420,
-          margin: "0 auto 32px auto",
-        }}
-      >
-        <label style={{ fontWeight: 500 }}>
-          Enter delivery address:
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        maxWidth: 940, margin: "0 auto 24px auto", flexWrap: "wrap", gap: 14
+      }}>
+        <button
+          style={{
+            background: "#0070f3", color: "#fff", border: "none", borderRadius: 6,
+            fontWeight: 600, fontSize: 16, padding: "11px 28px", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,32,128,0.08)"
+          }}
+          onClick={openAddModal}
+        >
+          + Add Menu Item
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <label>
+            <span style={{ fontSize: 14, color: "#555", marginRight: 5 }}>Filter by Date:</span>
+            <select
+              value={filterDate}
+              onChange={e => setFilterDate(e.target.value)}
+              style={{ padding: "7px 14px", borderRadius: 5, border: "1px solid #ccc" }}
+            >
+              <option value="">All Dates</option>
+              {allDates.map(date => (
+                <option key={date} value={date}>{date}</option>
+              ))}
+            </select>
+          </label>
           <input
-            value={address}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
-            placeholder="123 Main St, City, State"
-            required
+            type="text"
+            placeholder="Search by name..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
             style={{
-              marginLeft: 12,
-              padding: "6px 10px",
-              border: "1px solid #bbb",
-              borderRadius: 4,
-              width: 220,
+              padding: "7px 14px", borderRadius: 5, border: "1px solid #ccc", minWidth: 180
             }}
           />
-        </label>
-        <button
-          type="submit"
-          style={{
-            marginTop: 8,
-            background: "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: 6,
-            padding: "8px 18px",
-            fontWeight: 600,
-            fontSize: 16,
-            cursor: "pointer",
-          }}
-        >
-          Check Delivery Eligibility
-        </button>
-      </form>
-      {/* Zone feedback/map */}
-      {zoneError && (
-        <div style={{
-          background: "#ffe0e0",
-          color: "#a33",
-          border: "1px solid #f99",
-          borderRadius: 8,
-          padding: "12px 16px",
-          margin: "16px auto",
-          maxWidth: 420,
-          textAlign: "center",
+        </div>
+      </div>
+      <div style={{
+        background: "#fff",
+        borderRadius: 12,
+        boxShadow: "0 2px 18px rgba(0,0,0,0.06)",
+        padding: "0 0 12px 0",
+        maxWidth: 960,
+        margin: "0 auto"
+      }}>
+        <table style={{
+          width: "100%", borderCollapse: "collapse", fontSize: 16
         }}>
-          {zoneError}
-          <LeafletMap zones={zones} userLoc={userLoc} highlightZone={null} />
-        </div>
-      )}
-      {eligibleZone && (
-        <div style={{
-          background: "#e6ffe9",
-          color: "#165c2e",
-          border: "1px solid #81e2a0",
-          borderRadius: 8,
-          padding: "12px 16px",
-          margin: "16px auto",
-          maxWidth: 420,
-          textAlign: "center",
-        }}>
-          You&apos;re eligible for delivery in zone: <b>{eligibleZone.name}</b>
-          <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone.id} />
-        </div>
-      )}
-      {error && (
-        <div
-          style={{
-            background: "#ffe0e0",
-            color: "#a33",
-            border: "1px solid #f99",
-            borderRadius: 8,
-            padding: "12px 16px",
-            margin: "16px auto",
-            maxWidth: 420,
-            textAlign: "center",
-          }}
-        >
-          {error}
-        </div>
-      )}
-      {loading ? (
-        <div style={{ textAlign: "center", width: "100%" }}>Loading…</div>
-      ) : menuItems.length === 0 && !error ? (
-        <div
-          style={{
-            color: "#888",
-            fontSize: 18,
-            textAlign: "center",
-            width: "100%",
-          }}
-        >
-          No menu available for today.
-        </div>
-      ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "2rem",
-            justifyItems: "center",
-            alignItems: "stretch",
-          }}
-        >
-          {menuItems.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                background: "#fff",
-                border: "1px solid #eee",
-                borderRadius: 12,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                padding: 18,
-                width: 280,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                position: "relative",
-                transition: "box-shadow 0.2s",
-                minHeight: 340,
-                height: "100%",
-              }}
-            >
-              {item.image_url && item.image_url.trim() !== "" ? (
-                <Image
-                  src={item.image_url}
-                  alt={item.name}
-                  width={280}
-                  height={160}
-                  style={{
-                    width: "100%",
-                    maxHeight: 160,
-                    objectFit: "cover",
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
-                />
-              ) : null}
-              <h2
-                style={{
-                  margin: "8px 0 4px 0",
-                  fontSize: 21,
-                  color: "#222",
-                  textAlign: "center",
-                  fontWeight: 600,
-                }}
-              >
-                {item.name}
-              </h2>
-              <div
-                style={{
-                  color: "#444",
-                  fontSize: 15,
-                  marginBottom: 10,
-                  textAlign: "center",
-                  minHeight: 36,
-                }}
-              >
-                {item.description}
-              </div>
-              <div
-                style={{
-                  fontSize: 18,
-                  fontWeight: 700,
-                  color: "#0070f3",
-                  marginTop: "auto",
-                  letterSpacing: 0.5,
-                }}
-              >
-                ${(item.price_cents / 100).toFixed(2)}
-              </div>
-              <button
-                onClick={() => addToCart(item)}
-                style={{
-                  marginTop: 16,
-                  background: "#0070f3",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 6,
-                  padding: "10px 24px",
-                  fontWeight: 600,
-                  fontSize: 15,
-                  cursor: "pointer",
-                  transition: "background 0.2s",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-                }}
-                disabled={!canOrder}
-                title={!canOrder ? "Enter your address and check delivery eligibility first" : undefined}
-              >
-                Add to Cart
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      {/* Floating Cart Button */}
-      {hasMounted && cart.length > 0 && (
-        <button
-          onClick={goToCart}
-          style={{
-            position: "fixed",
-            right: 24,
-            bottom: 24,
-            background: "#0070f3",
-            color: "#fff",
-            border: "none",
-            borderRadius: "50%",
-            width: 60,
-            height: 60,
-            fontSize: 22,
-            fontWeight: 700,
-            boxShadow: "0 2px 10px rgba(0,112,243,0.12)",
-            cursor: "pointer",
-            zIndex: 1000,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-          aria-label="View cart"
-        >
-          🛒
-          <span
-            style={{
-              position: "absolute",
-              top: 10,
-              right: 10,
-              background: "#fff",
-              color: "#0070f3",
-              borderRadius: "50%",
-              width: 22,
-              height: 22,
-              fontSize: 14,
-              fontWeight: 700,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              border: "2px solid #0070f3",
-            }}
-          >
-            {cart.reduce((sum, item) => sum + (item.quantity ?? 1), 0)}
-          </span>
-        </button>
-      )}
+          <thead>
+            <tr style={{ background: "#f4f7fb" }}>
+              <th style={{ padding: "12px 10px", borderBottom: "1px solid #e5e5e5", textAlign: "left" }}>Date</th>
+              <th style={{ padding: "12px 10px", borderBottom: "1px solid #e5e5e5", textAlign: "left" }}>Name</th>
+              <th style={{ padding: "12px 10px", borderBottom: "1px solid #e5e5e5", textAlign: "left" }}>Description</th>
+              <th style={{ padding: "12px 10px", borderBottom: "1px solid #e5e5e5", textAlign: "right" }}>Price</th>
+              <th style={{ padding: "12px 10px", borderBottom: "1px solid #e5e5e5", textAlign: "center" }}>Image</th>
+              <th style={{ padding: "12px 10px", borderBottom: "1px solid #e5e5e5" }}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: "center", color: "#888", padding: 44 }}>
+                  Loading…
+                </td>
+              </tr>
+            ) : items.length === 0 ? (
+              <tr>
+                <td colSpan={6} style={{ textAlign: "center", color: "#aaa", padding: 44 }}>
+                  No menu items found.
+                </td>
+              </tr>
+            ) : (
+              items.map(renderRow)
+            )}
+          </tbody>
+        </table>
+        {error && (
+          <div style={{
+            color: "#b00", background: "#ffeaea", padding: 12, borderRadius: 6, margin: "20px auto 0 auto", maxWidth: 500, textAlign: "center"
+          }}>
+            {error}
+          </div>
+        )}
+      </div>
+      {renderModal()}
     </div>
   );
 }
