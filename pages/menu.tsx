@@ -149,10 +149,14 @@ export default function MenuPage() {
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: any[]) => setZones(zones.map(z => ({
-        ...z,
-        id: String(z.id),
-      }))))
+      .then((zones: unknown[]) =>
+        setZones(
+          zones.map((z) => ({
+            ...z,
+            id: String((z as { id: string | number }).id),
+          })) as Zone[]
+        )
+      )
       .catch(() => setZones([]));
   }, []);
 

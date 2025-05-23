@@ -17,9 +17,9 @@ interface Props {
 export default function LeafletMapUser({ zones, userLoc, highlightZone }: Props) {
   useEffect(() => {
     // Prevent multiple map inits on hot reload (optional)
-    const mapContainer = document.getElementById("user-map");
-    if (mapContainer && (mapContainer as any)._leaflet_id) {
-      (mapContainer as any)._leaflet_id = null;
+    const mapContainer = document.getElementById("user-map") as (HTMLElement & { _leaflet_id?: unknown }) | null;
+    if (mapContainer && mapContainer._leaflet_id) {
+      mapContainer._leaflet_id = undefined;
     }
 
     const map = L.map("user-map").setView([37, -95], 4);
