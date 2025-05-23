@@ -1,29 +1,9 @@
-import { useEffect, useState, FormEvent, KeyboardEvent, ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/utils/addressToCoord";
 import { pointInZones } from "@/utils/zoneCheck";
-import { Zone } from "@/types/zone"; // Use shared type
-
-// ---- Type definitions ----
-interface MenuItem {
-  id: number;
-  name: string;
-  description: string;
-  price_cents: number;
-  image_url?: string | null;
-  position?: number;
-}
-
-interface CartItem extends MenuItem {
-  quantity: number;
-}
-
-interface GeoPoint {
-  lat: number;
-  lon: number;
-}
 
 // Dynamically import Leaflet map, SSR disabled
 const LeafletMap = dynamic(() => import("@/components/LeafletMapUser"), { ssr: false });
@@ -33,7 +13,7 @@ function getTodayISO() {
   return today.toISOString().substring(0, 10);
 }
 
-function loadCart(): CartItem[] {
+function loadCart() {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -42,7 +22,7 @@ function loadCart(): CartItem[] {
   }
 }
 
-function saveCart(cart: CartItem[]) {
+function saveCart(cart: any[]) {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
@@ -73,20 +53,20 @@ function Toast({ message, onClose }: { message: string, onClose: () => void }) {
 }
 
 export default function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<any[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
   // Delivery zone eligibility
-  const [address, setAddress] = useState<string>("");
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [userLoc, setUserLoc] = useState<GeoPoint | null>(null);
-  const [eligibleZone, setEligibleZone] = useState<Zone | null>(null);
-  const [zoneError, setZoneError] = useState<string>("");
+  const [address, setAddress] = useState("");
+  const [zones, setZones] = useState<any[]>([]);
+  const [userLoc, setUserLoc] = useState<{ lat: number, lon: number } | null>(null);
+  const [eligibleZone, setEligibleZone] = useState<any | null>(null);
+  const [zoneError, setZoneError] = useState("");
   // UX improvements
   const [toast, setToast] = useState<string | null>(null);
   const [cartBump, setCartBump] = useState(false);
@@ -134,11 +114,11 @@ export default function MenuPage() {
           setError("Error fetching menu items: " + itemsError.message);
           setMenuItems([]);
         } else {
-          setMenuItems((items ?? []) as MenuItem[]);
+          setMenuItems(items ?? []);
         }
         setLoading(false);
-      } catch {
-        setError("Unexpected error occurred.");
+      } catch (err: any) {
+        setError("Unexpected error: " + err.message);
         setLoading(false);
       }
     }
@@ -149,18 +129,11 @@ export default function MenuPage() {
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: unknown[]) =>
-        setZones(
-          zones.map((z) => ({
-            ...z,
-            id: String((z as { id: string | number }).id),
-          })) as Zone[]
-        )
-      )
+      .then(setZones)
       .catch(() => setZones([]));
   }, []);
 
-  async function handleCheckZone(e: FormEvent<HTMLFormElement>) {
+  async function handleCheckZone(e: any) {
     e.preventDefault();
     setZoneError("");
     setEligibleZone(null);
@@ -171,10 +144,10 @@ export default function MenuPage() {
       return;
     }
 
-    let loc: GeoPoint | null = null;
+    let loc;
     try {
       loc = await geocodeAddress(address);
-    } catch {
+    } catch (err: any) {
       setZoneError("Could not look up your address.");
       return;
     }
@@ -185,7 +158,7 @@ export default function MenuPage() {
     setUserLoc(loc);
 
     // Pass a GeoJSON Point to pointInZones (MUST be [lon, lat])
-    const point = { type: "Point", coordinates: [loc.lon, loc.lat] } as GeoJSON.Point;
+    const point = { type: "Point", coordinates: [loc.lon, loc.lat] };
     const zone = pointInZones(point, zones);
     if (zone) {
       setEligibleZone(zone);
@@ -196,7 +169,7 @@ export default function MenuPage() {
     }
   }
 
-  function addToCart(item: MenuItem) {
+  function addToCart(item: any) {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
@@ -238,7 +211,7 @@ export default function MenuPage() {
           color: "#0070f3",
         }}
       >
-        Today&apos;s Lunch Menu
+        Today's Lunch Menu
       </h1>
       <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
         {getTodayISO()}
@@ -260,7 +233,7 @@ export default function MenuPage() {
           Enter delivery address:
           <input
             value={address}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
+            onChange={e => setAddress(e.target.value)}
             placeholder="123 Main St, City, State"
             required
             style={{
@@ -316,7 +289,7 @@ export default function MenuPage() {
           maxWidth: 420,
           textAlign: "center",
         }}>
-          You&apos;re eligible for delivery in zone: <b>{eligibleZone.name}</b>
+          You're eligible for delivery in zone: <b>{eligibleZone.name}</b>
           <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone.id} />
         </div>
       )}
@@ -378,7 +351,7 @@ export default function MenuPage() {
                 height: "100%",
               }}
               tabIndex={0}
-              onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => (e.key === "Enter" || e.key === " ") && canOrder && addToCart(item)}
+              onKeyDown={e => (e.key === "Enter" || e.key === " ") && canOrder && addToCart(item)}
             >
               <h2
                 style={{

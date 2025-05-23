@@ -1,49 +1,43 @@
-import React, { useState, useEffect } from "react";
-import { Zone } from "@/types/zone";
-import DeliveryZoneEditor from "./DeliveryZoneEditor";
-import ZoneMap from "./ZoneMap";
+import React, { useEffect, useState } from "react";
+import ZoneForm from "./ZoneForm";
+import dynamic from "next/dynamic";
+const ZoneMap = dynamic(() => import("./ZoneMap"), { ssr: false });
 
 export default function DeliveryZonesAdminPage() {
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
+  const [zones, setZones] = useState<any[]>([]);
+  const [editingZone, setEditingZone] = useState<any|null>(null);
 
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: unknown[]) =>
-        setZones(
-          zones.map((z) => ({
-            ...z,
-            id: String((z as { id: string | number }).id),
-          })) as Zone[]
-        )
-      )
-      .catch(() => setZones([]));
+      .then(setZones);
   }, []);
+
+  function handleEdit(zone: any) {
+    setEditingZone(zone);
+  }
+  function handleDone() {
+    setEditingZone(null);
+    fetch("/api/delivery-zones").then(r => r.json()).then(setZones);
+  }
 
   return (
     <div>
-      <h2>Delivery Zones</h2>
-      <div style={{ display: "flex", gap: 32 }}>
-        <div style={{ flex: 2 }}>
-          <ZoneMap zones={zones} selectedZone={selectedZone} setSelectedZone={setSelectedZone} />
-        </div>
-        <div style={{ flex: 3 }}>
-          <DeliveryZoneEditor
-            zone={selectedZone}
-            onSaved={z => {
-              setZones((zones) =>
-                zones.map((zone) => (zone.id === z.id ? z : zone))
-              );
-              setSelectedZone(z);
-            }}
-            onDeleted={id => {
-              setZones((zones) => zones.filter((z) => z.id !== id));
-              setSelectedZone(null);
-            }}
-          />
-        </div>
-      </div>
+      <h1>Delivery Zones</h1>
+      <ZoneMap zones={zones} />
+      <ZoneForm
+        editingZone={editingZone}
+        onDone={handleDone}
+        existingZones={zones}
+      />
+      <ul>
+        {zones.map(zone => (
+          <li key={zone.id}>
+            {zone.name} {zone.active ? "" : "(inactive)"}
+            <button onClick={() => handleEdit(zone)}>Edit</button>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

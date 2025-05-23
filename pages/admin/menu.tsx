@@ -1,26 +1,9 @@
-import { useEffect, useState, ChangeEvent, FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 import { geocodeAddress } from "@/utils/addressToCoord";
 import { pointInZones } from "@/utils/zoneCheck";
-import Image from "next/image";
-import { Zone } from "@/types/zone"; // <-- Import shared Zone type
-
-// Data interfaces
-interface MenuItem {
-  id: number;
-  name: string;
-  description: string;
-  price_cents: number;
-  image_url?: string;
-  quantity?: number;
-}
-
-interface GeoPoint {
-  lat: number;
-  lon: number;
-}
 
 // Dynamically import Leaflet map, SSR disabled
 const LeafletMap = dynamic(() => import("@/components/LeafletMapUser"), { ssr: false });
@@ -30,34 +13,34 @@ function getTodayISO() {
   return today.toISOString().substring(0, 10);
 }
 
-function loadCart(): MenuItem[] {
+function loadCart() {
   if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem("cart") || "[]") as MenuItem[];
+    return JSON.parse(localStorage.getItem("cart") || "[]");
   } catch {
     return [];
   }
 }
 
-function saveCart(cart: MenuItem[]) {
+function saveCart(cart: any[]) {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 export default function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [cart, setCart] = useState<MenuItem[]>([]);
+  const [cart, setCart] = useState<any[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
 
   // Delivery zone eligibility
-  const [address, setAddress] = useState<string>("");
-  const [zones, setZones] = useState<Zone[]>([]);
-  const [userLoc, setUserLoc] = useState<GeoPoint | null>(null);
-  const [eligibleZone, setEligibleZone] = useState<Zone | null>(null);
-  const [zoneError, setZoneError] = useState<string>("");
+  const [address, setAddress] = useState("");
+  const [zones, setZones] = useState<any[]>([]);
+  const [userLoc, setUserLoc] = useState<{ lat: number, lon: number } | null>(null);
+  const [eligibleZone, setEligibleZone] = useState<any | null>(null);
+  const [zoneError, setZoneError] = useState("");
 
   useEffect(() => {
     setCart(loadCart());
@@ -102,15 +85,11 @@ export default function MenuPage() {
           setError("Error fetching menu items: " + itemsError.message);
           setMenuItems([]);
         } else {
-          setMenuItems((items ?? []) as MenuItem[]);
+          setMenuItems(items ?? []);
         }
         setLoading(false);
-      } catch (err) {
-        if (err instanceof Error) {
-          setError("Unexpected error: " + err.message);
-        } else {
-          setError("Unexpected error occurred.");
-        }
+      } catch (err: any) {
+        setError("Unexpected error: " + err.message);
         setLoading(false);
       }
     }
@@ -121,18 +100,11 @@ export default function MenuPage() {
   useEffect(() => {
     fetch("/api/delivery-zones")
       .then(r => r.json())
-      .then((zones: unknown[]) =>
-        setZones(
-          zones.map((z) => ({
-            ...z,
-            id: String((z as { id: string | number }).id),
-          })) as Zone[]
-        )
-      )
+      .then(setZones)
       .catch(() => setZones([]));
   }, []);
 
-  async function handleCheckZone(e: FormEvent<HTMLFormElement>) {
+  async function handleCheckZone(e: any) {
     e.preventDefault();
     setZoneError("");
     setEligibleZone(null);
@@ -143,10 +115,10 @@ export default function MenuPage() {
       return;
     }
 
-    let loc: GeoPoint | null = null;
+    let loc;
     try {
       loc = await geocodeAddress(address);
-    } catch {
+    } catch (err: any) {
       setZoneError("Could not look up your address.");
       return;
     }
@@ -156,7 +128,7 @@ export default function MenuPage() {
     }
     setUserLoc(loc);
 
-    // Pass a GeoJSON Point to pointInZones (MUST be [lon, lat])
+    // The fix: pass a GeoJSON Point to pointInZones
     const point = { type: "Point", coordinates: [loc.lon, loc.lat] };
     const zone = pointInZones(point, zones);
     if (zone) {
@@ -168,12 +140,12 @@ export default function MenuPage() {
     }
   }
 
-  function addToCart(item: MenuItem) {
+  function addToCart(item: any) {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === item.id);
       if (existing) {
         return prev.map((i) =>
-          i.id === item.id ? { ...i, quantity: (i.quantity ?? 1) + 1 } : i
+          i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
         );
       } else {
         return [...prev, { ...item, quantity: 1 }];
@@ -206,7 +178,7 @@ export default function MenuPage() {
           color: "#0070f3",
         }}
       >
-        Today&apos;s Lunch Menu
+        Today's Lunch Menu
       </h1>
       <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
         {getTodayISO()}
@@ -228,7 +200,7 @@ export default function MenuPage() {
           Enter delivery address:
           <input
             value={address}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
+            onChange={e => setAddress(e.target.value)}
             placeholder="123 Main St, City, State"
             required
             style={{
@@ -284,7 +256,7 @@ export default function MenuPage() {
           maxWidth: 420,
           textAlign: "center",
         }}>
-          You&apos;re eligible for delivery in zone: <b>{eligibleZone.name}</b>
+          You're eligible for delivery in zone: <b>{eligibleZone.name}</b>
           <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone.id} />
         </div>
       )}
@@ -347,11 +319,9 @@ export default function MenuPage() {
               }}
             >
               {item.image_url && item.image_url.trim() !== "" ? (
-                <Image
+                <img
                   src={item.image_url}
                   alt={item.name}
-                  width={280}
-                  height={160}
                   style={{
                     width: "100%",
                     maxHeight: 160,
@@ -462,7 +432,7 @@ export default function MenuPage() {
               border: "2px solid #0070f3",
             }}
           >
-            {cart.reduce((sum, item) => sum + (item.quantity ?? 1), 0)}
+            {cart.reduce((sum, item) => sum + item.quantity, 0)}
           </span>
         </button>
       )}

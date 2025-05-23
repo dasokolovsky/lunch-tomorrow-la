@@ -7,17 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from("delivery_zones")
       .select("*")
       .order("name", { ascending: true });
-
     if (error) return res.status(500).json({ error: error.message });
-
-    // Ensure all ids are strings, and windows is always an object
-    const safeData = (data ?? []).map((z) => ({
-      ...z,
-      id: String(z.id),
-      windows: z.windows ?? {},
-    }));
-
-    res.json(safeData);
+    res.json(data);
   } else if (req.method === "POST") {
     const { name, geojson, windows, active } = req.body;
     if (!name || !geojson || !windows) {
@@ -25,19 +16,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     const { data, error } = await supabaseAdmin
       .from("delivery_zones")
-      .insert([{ name, geojson, windows: windows ?? {}, active }])
+      .insert([{ name, geojson, windows, active }])
       .select()
       .single();
     if (error) return res.status(500).json({ error: error.message });
-
-    // Ensure returned id is a string, and windows is always an object
-    const safeZone = {
-      ...data,
-      id: String(data.id),
-      windows: data.windows ?? {},
-    };
-
-    res.status(201).json(safeZone);
+    res.status(201).json(data);
   } else {
     res.setHeader("Allow", "GET, POST");
     res.status(405).end(`Method ${req.method} Not Allowed`);

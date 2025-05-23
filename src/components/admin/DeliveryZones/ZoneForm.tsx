@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import ZoneWindowsEditor from "./ZoneWindowsEditor";
 import { normalizeZoneGeojson } from "@/utils/normalizeGeojson";
 import { findOverlappingZones, mergeZones } from "./geojsonUtils";
-import { Zone } from "@/types/zone"; // <-- Import the shared Zone type
+
+interface Zone {
+  id?: string;
+  name: string;
+  geojson: any;
+  windows: Record<string, { start: string; end: string }[]>;
+  active: boolean;
+}
 
 interface ZoneFormProps {
   editingZone?: Zone | null;
@@ -12,7 +19,7 @@ interface ZoneFormProps {
 
 export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFormProps) {
   const [name, setName] = useState(editingZone?.name || "");
-  const [geojson, setGeojson] = useState<GeoJSON.Feature | GeoJSON.FeatureCollection | GeoJSON.Geometry | null>(editingZone?.geojson || null);
+  const [geojson, setGeojson] = useState<any>(editingZone?.geojson || null);
   const [windows, setWindows] = useState<Record<string, { start: string; end: string }[]>>(
     editingZone?.windows || {}
   );
@@ -42,7 +49,7 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
         setGeojson(normalized);
         const overlapsIdx = findOverlappingZones(normalized, existingZones);
         setOverlaps(overlapsIdx);
-      } catch {
+      } catch (err) {
         alert("Invalid GeoJSON");
       }
     };

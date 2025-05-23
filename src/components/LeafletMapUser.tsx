@@ -1,27 +1,9 @@
 import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Zone } from "@/types/zone"; // Use the shared Zone type
 
-interface GeoPoint {
-  lat: number;
-  lon: number;
-}
-
-interface Props {
-  zones: Zone[];
-  userLoc: GeoPoint | null;
-  highlightZone: string | null;
-}
-
-export default function LeafletMapUser({ zones, userLoc, highlightZone }: Props) {
+export default function LeafletMapUser({ zones, userLoc, highlightZone }) {
   useEffect(() => {
-    // Prevent multiple map inits on hot reload (optional)
-    const mapContainer = document.getElementById("user-map") as (HTMLElement & { _leaflet_id?: unknown }) | null;
-    if (mapContainer && mapContainer._leaflet_id) {
-      mapContainer._leaflet_id = undefined;
-    }
-
     const map = L.map("user-map").setView([37, -95], 4);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors'
@@ -40,11 +22,12 @@ export default function LeafletMapUser({ zones, userLoc, highlightZone }: Props)
     });
 
     if (userLoc) {
-      L.marker([userLoc.lat, userLoc.lon], {
+      const marker = L.marker([userLoc.lat, userLoc.lon], {
         title: "Your Address"
       }).addTo(map);
       map.setView([userLoc.lat, userLoc.lon], 13);
     } else if (zones.length) {
+      // Fit to all zone bounds
       const allLayers = zones
         .filter(z => z.geojson)
         .map(z => L.geoJSON(z.geojson));

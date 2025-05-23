@@ -1,18 +1,7 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import Image from "next/image";
 
-// --- Type Definitions ---
-interface CartItem {
-  id: number;
-  name: string;
-  description: string;
-  price_cents: number;
-  image_url?: string | null;
-  quantity: number;
-}
-
-function loadCart(): CartItem[] {
+function loadCart() {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -21,13 +10,13 @@ function loadCart(): CartItem[] {
   }
 }
 
-function saveCart(cart: CartItem[]): void {
+function saveCart(cart: any[]) {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 export default function CartPage() {
-  const [cart, setCart] = useState<CartItem[]>([]);
-  // Removed setLoading since it is unused
+  const [cart, setCart] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const router = useRouter();
 
@@ -68,6 +57,7 @@ export default function CartPage() {
   }
 
   function goToCheckout() {
+    // Go to the integrated checkout page (Stripe Elements)
     router.push("/checkout");
   }
 
@@ -133,11 +123,9 @@ export default function CartPage() {
                   <td style={{ padding: "8px", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {item.image_url && item.image_url.trim() !== "" && (
-                        <Image
+                        <img
                           src={item.image_url}
                           alt={item.name}
-                          width={54}
-                          height={54}
                           style={{
                             width: 54,
                             height: 54,
@@ -154,7 +142,7 @@ export default function CartPage() {
                       type="number"
                       value={item.quantity}
                       min={1}
-                      onChange={(e: ChangeEvent<HTMLInputElement>) =>
+                      onChange={(e) =>
                         updateQuantity(item.id, Number(e.target.value))
                       }
                       style={{
@@ -212,9 +200,11 @@ export default function CartPage() {
                 padding: "14px 38px",
                 fontWeight: 700,
                 fontSize: 18,
-                cursor: "pointer",
+                cursor: loading ? "not-allowed" : "pointer",
                 marginLeft: 12,
+                opacity: loading ? 0.6 : 1,
               }}
+              disabled={loading}
             >
               Checkout
             </button>

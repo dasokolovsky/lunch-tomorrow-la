@@ -1,41 +1,37 @@
-import React from "react";
-import { Zone } from "@/types/zone";
+import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-interface Props {
-  zones: Zone[];
-  selectedZone: Zone | null;
-  setSelectedZone: (zone: Zone | null) => void;
-}
-
-export default function ZoneMap({ zones, selectedZone, setSelectedZone }: Props) {
-  React.useEffect(() => {
-    // @ts-expect-error
-    if (typeof window === "undefined") return;
-
-    const map = L.map("admin-zone-map").setView([37, -95], 4);
+export default function ZoneMap({ zones }) {
+  useEffect(() => {
+    const map = L.map("admin-zones-map").setView([37, -95], 4); // Center USA
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
 
     zones.forEach(zone => {
       if (zone.geojson) {
-        const layer = L.geoJSON(zone.geojson, {
-          style: { color: selectedZone && zone.id === selectedZone.id ? "green" : (zone.active ? "blue" : "gray"), weight: 2 }
-        }).addTo(map)
-        .bindPopup(zone.name);
-        if (selectedZone && zone.id === selectedZone.id) {
-          layer.openPopup();
-        }
-        layer.on("click", () => setSelectedZone(zone));
+        L.geoJSON(zone.geojson, {
+          style: { color: zone.active ? "blue" : "gray" }
+        }).addTo(map).bindPopup(zone.name);
       }
     });
+
+    // Fit to bounds if any zones exist
+    if (zones.length) {
+      const allLayers = zones
+        .filter(z => z.geojson)
+        .map(z => L.geoJSON(z.geojson));
+      if (allLayers.length) {
+        const group = L.featureGroup(allLayers.map(l => l));
+        map.fitBounds(group.getBounds());
+      }
+    }
 
     return () => {
       map.remove();
     };
-  }, [zones, selectedZone, setSelectedZone]);
+  }, [zones]);
 
-  return <div id="admin-zone-map" style={{ height: 400, width: "100%" }} />;
+  return <div id="admin-zones-map" style={{ height: 400, width: "100%" }} />;
 }
