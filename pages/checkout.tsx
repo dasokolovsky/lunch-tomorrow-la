@@ -3,8 +3,38 @@ import { useRouter } from "next/router";
 import { supabase } from "@/utils/supabaseClient";
 import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 
+// --- Type Definitions ---
+interface CartItem {
+  id: number;
+  name: string;
+  description: string;
+  price_cents: number;
+  image_url?: string | null;
+  quantity: number;
+}
+
+interface SavedCard {
+  id: string;
+  card: {
+    brand: string;
+    last4: string;
+    exp_month: number;
+    exp_year: number;
+  };
+}
+
+interface Session {
+  user: { id: string };
+}
+
+interface GeoResult {
+  lat: string;
+  lon: string;
+  verifiedAddress: string;
+}
+
 // Util: Geocode address
-async function geocodeAddress(address: string) {
+async function geocodeAddress(address: string): Promise<GeoResult | null> {
   const API_KEY = "pk.5e6de08ccf6dc46baa69f7aedcca6b20";
   const url = `https://us1.locationiq.com/v1/search?key=${API_KEY}&q=${encodeURIComponent(
     address
@@ -17,7 +47,7 @@ async function geocodeAddress(address: string) {
   return { lat, lon, verifiedAddress: display_name };
 }
 
-function loadCart() {
+function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -27,11 +57,11 @@ function loadCart() {
 }
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [session, setSession] = useState<any>(undefined);
+  const [session, setSession] = useState<Session | null | undefined>(undefined);
 
   // Order info
   const [deliveryWindow, setDeliveryWindow] = useState<string>("");
@@ -48,7 +78,7 @@ export default function CheckoutPage() {
 
   // Save card
   const [saveCard, setSaveCard] = useState(false);
-  const [savedCards, setSavedCards] = useState<any[]>([]);
+  const [savedCards, setSavedCards] = useState<SavedCard[]>([]);
   const [selectedSavedCard, setSelectedSavedCard] = useState<string>("");
 
   // Address debounce
@@ -187,7 +217,7 @@ export default function CheckoutPage() {
       }, { onConflict: "id" });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
@@ -381,7 +411,7 @@ export default function CheckoutPage() {
                   style={{ marginLeft: 8 }}
                 >
                   <option value="">Choose…</option>
-                  {savedCards.map((c: any) => (
+                  {savedCards.map((c) => (
                     <option value={c.id} key={c.id}>
                       {c.card.brand.toUpperCase()} •••• {c.card.last4} (exp {c.card.exp_month}/{c.card.exp_year})
                     </option>

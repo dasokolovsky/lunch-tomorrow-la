@@ -241,7 +241,7 @@ export default function MenuPage() {
           color: "#0070f3",
         }}
       >
-        Today's Lunch Menu
+        Today&apos;s Lunch Menu
       </h1>
       <p style={{ textAlign: "center", color: "#666", marginBottom: 30 }}>
         {getTodayISO()}
@@ -319,7 +319,7 @@ export default function MenuPage() {
           maxWidth: 420,
           textAlign: "center",
         }}>
-          You're eligible for delivery in zone: <b>{eligibleZone.name}</b>
+          You&apos;re eligible for delivery in zone: <b>{eligibleZone.name}</b>
           <LeafletMap zones={zones} userLoc={userLoc} highlightZone={eligibleZone.id} />
         </div>
       )}

@@ -1,5 +1,6 @@
 import { useEffect, useState, ChangeEvent } from "react";
 import { useRouter } from "next/router";
+import Image from "next/image";
 
 // --- Type Definitions ---
 interface CartItem {
@@ -132,10 +133,11 @@ export default function CartPage() {
                   <td style={{ padding: "8px", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {item.image_url && item.image_url.trim() !== "" && (
-                        // You can switch to "next/image" for even better optimization
-                        <img
+                        <Image
                           src={item.image_url}
                           alt={item.name}
+                          width={54}
+                          height={54}
                           style={{
                             width: 54,
                             height: 54,

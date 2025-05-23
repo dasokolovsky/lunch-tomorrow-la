@@ -1,4 +1,4 @@
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
 
 const USER_TABLE = "profiles";
@@ -90,7 +90,7 @@ export default function AdminOrdersPage() {
       setLoading(false);
     }
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // No need for eslint-disable-next-line here; dependencies are correct
   }, [dateFilter, statusFilter, userFilter]);
 
   // Unique users for filter dropdown
