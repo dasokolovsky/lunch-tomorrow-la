@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
-export default function LeafletMapUser({ zones, userLoc, highlightZone }) {
+export default function LeafletMapUser({ zones, userLoc, highlightZone }: any) {
   useEffect(() => {
     const map = L.map("user-map").setView([37, -95], 4);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
