@@ -154,7 +154,6 @@ export default function MenuPage() {
 
   // UX improvements
   const [toast, setToast] = useState<string | null>(null);
-  const [cartBump, setCartBump] = useState(false);
 
   useEffect(() => {
     setCart(loadCart());
@@ -275,8 +274,6 @@ export default function MenuPage() {
     });
     // Show toast & animate cart badge
     setToast(`Added "${item.name}" to cart`);
-    setCartBump(true);
-    setTimeout(() => setCartBump(false), 350);
   }
 
   function goToCart() {
