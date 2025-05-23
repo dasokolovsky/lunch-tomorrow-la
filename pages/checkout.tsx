@@ -17,7 +17,16 @@ async function geocodeAddress(address: string) {
   return { lat, lon, verifiedAddress: display_name };
 }
 
-function loadCart() {
+// Cart item type for type safety
+type CartItem = {
+  id: number;
+  name: string;
+  price_cents: number;
+  quantity: number;
+  image_url?: string;
+};
+
+function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -27,7 +36,7 @@ function loadCart() {
 }
 
 export default function CheckoutPage() {
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -183,7 +192,6 @@ export default function CheckoutPage() {
       .from("profiles")
       .upsert({
         id: userId
-        // Add more fields here if needed (e.g., full_name, address, etc.)
       }, { onConflict: "id" });
   }
 

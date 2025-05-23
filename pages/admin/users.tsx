@@ -29,8 +29,8 @@ export default function AdminUsersPage() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error || "Unknown error");
       setUsers((json.users || []).filter((u: User) => !!u.phone));
-    } catch (err: any) {
-      setError("Error fetching users: " + err.message);
+    } catch (err) {
+      setError("Error fetching users: " + (err instanceof Error ? err.message : String(err)));
       setUsers([]);
     }
     setLoading(false);
@@ -66,8 +66,8 @@ export default function AdminUsersPage() {
       setSelectAll(false);
       setMessage("");
       fetchUsers();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
     }
     setSending(false);
     setConfirmationOpen(false);

@@ -1,7 +1,17 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
+import Image from "next/image";
 
-function loadCart() {
+// Define a type for cart items for better type safety
+type CartItem = {
+  id: number;
+  name: string;
+  price_cents: number;
+  quantity: number;
+  image_url?: string;
+};
+
+function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     return JSON.parse(localStorage.getItem("cart") || "[]");
@@ -10,12 +20,12 @@ function loadCart() {
   }
 }
 
-function saveCart(cart: any[]) {
+function saveCart(cart: CartItem[]) {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
 export default function CartPage() {
-  const [cart, setCart] = useState<any[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const router = useRouter();
@@ -123,12 +133,13 @@ export default function CartPage() {
                   <td style={{ padding: "8px", verticalAlign: "middle" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       {item.image_url && item.image_url.trim() !== "" && (
-                        <img
+                        // Use Next.js <Image /> for optimization and eslint compliance
+                        <Image
                           src={item.image_url}
                           alt={item.name}
+                          width={54}
+                          height={54}
                           style={{
-                            width: 54,
-                            height: 54,
                             objectFit: "cover",
                             borderRadius: 6,
                           }}
