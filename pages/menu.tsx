@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../utils/supabaseClient";
+import { supabase } from "@/utils/supabaseClient";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
-import { geocodeAddress } from "../utils/addressToCoord";
-import { pointInZones } from "../utils/zoneCheck";
+import { geocodeAddress } from "@/utils/addressToCoord";
+import { pointInZones } from "@/utils/zoneCheck";
 
 // Dynamically import Leaflet map, SSR disabled
-const LeafletMap = dynamic(() => import("../components/LeafletMapUser"), { ssr: false });
+const LeafletMap = dynamic(() => import("@/components/LeafletMapUser"), { ssr: false });
 
 function getTodayISO() {
   const today = new Date();
@@ -26,6 +26,32 @@ function saveCart(cart: any[]) {
   localStorage.setItem("cart", JSON.stringify(cart));
 }
 
+function Toast({ message, onClose }: { message: string, onClose: () => void }) {
+  useEffect(() => {
+    const timeout = setTimeout(onClose, 1500);
+    return () => clearTimeout(timeout);
+  }, [onClose]);
+  return (
+    <div style={{
+      position: "fixed",
+      left: "50%",
+      bottom: 90,
+      transform: "translateX(-50%)",
+      background: "#222",
+      color: "#fff",
+      padding: "12px 28px",
+      borderRadius: 24,
+      fontWeight: 600,
+      fontSize: 16,
+      boxShadow: "0 2px 16px #0003",
+      zIndex: 2000,
+      opacity: 0.98,
+    }}>
+      {message}
+    </div>
+  );
+}
+
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +67,9 @@ export default function MenuPage() {
   const [userLoc, setUserLoc] = useState<{ lat: number, lon: number } | null>(null);
   const [eligibleZone, setEligibleZone] = useState<any | null>(null);
   const [zoneError, setZoneError] = useState("");
+  // UX improvements
+  const [toast, setToast] = useState<string | null>(null);
+  const [cartBump, setCartBump] = useState(false);
 
   useEffect(() => {
     setCart(loadCart());
@@ -128,7 +157,9 @@ export default function MenuPage() {
     }
     setUserLoc(loc);
 
-    const zone = pointInZones(loc, zones);
+    // Pass a GeoJSON Point to pointInZones (MUST be [lon, lat])
+    const point = { type: "Point", coordinates: [loc.lon, loc.lat] };
+    const zone = pointInZones(point, zones);
     if (zone) {
       setEligibleZone(zone);
       setZoneError("");
@@ -149,6 +180,10 @@ export default function MenuPage() {
         return [...prev, { ...item, quantity: 1 }];
       }
     });
+    // Show toast & animate cart badge
+    setToast(`Added "${item.name}" to cart`);
+    setCartBump(true);
+    setTimeout(() => setCartBump(false), 350);
   }
 
   function goToCart() {
@@ -303,32 +338,21 @@ export default function MenuPage() {
               style={{
                 background: "#fff",
                 border: "1px solid #eee",
-                borderRadius: 12,
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                padding: 18,
+                borderRadius: 14,
+                boxShadow: "0 2px 9px rgba(0,0,0,0.05)",
+                padding: 20,
                 width: 280,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
                 position: "relative",
-                transition: "box-shadow 0.2s",
-                minHeight: 340,
+                transition: "box-shadow 0.2s, transform 0.12s",
+                minHeight: 180,
                 height: "100%",
               }}
+              tabIndex={0}
+              onKeyDown={e => (e.key === "Enter" || e.key === " ") && canOrder && addToCart(item)}
             >
-              {item.image_url && item.image_url.trim() !== "" ? (
-                <img
-                  src={item.image_url}
-                  alt={item.name}
-                  style={{
-                    width: "100%",
-                    maxHeight: 160,
-                    objectFit: "cover",
-                    borderRadius: 8,
-                    marginBottom: 12,
-                  }}
-                />
-              ) : null}
               <h2
                 style={{
                   margin: "8px 0 4px 0",
@@ -336,6 +360,7 @@ export default function MenuPage() {
                   color: "#222",
                   textAlign: "center",
                   fontWeight: 600,
+                  letterSpacing: 0.1,
                 }}
               >
                 {item.name}
@@ -358,24 +383,25 @@ export default function MenuPage() {
                   color: "#0070f3",
                   marginTop: "auto",
                   letterSpacing: 0.5,
+                  marginBottom: 8,
                 }}
               >
                 ${(item.price_cents / 100).toFixed(2)}
               </div>
               <button
-                onClick={() => addToCart(item)}
+                onClick={() => canOrder && addToCart(item)}
                 style={{
-                  marginTop: 16,
-                  background: "#0070f3",
+                  marginTop: 6,
+                  background: canOrder ? "#0070f3" : "#ddd",
                   color: "#fff",
                   border: "none",
                   borderRadius: 6,
                   padding: "10px 24px",
                   fontWeight: 600,
                   fontSize: 15,
-                  cursor: "pointer",
-                  transition: "background 0.2s",
-                  boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+                  cursor: canOrder ? "pointer" : "not-allowed",
+                  opacity: canOrder ? 1 : 0.6,
+                  transition: "background 0.2s, transform 0.12s",
                 }}
                 disabled={!canOrder}
                 title={!canOrder ? "Enter your address and check delivery eligibility first" : undefined}
@@ -386,7 +412,16 @@ export default function MenuPage() {
           ))}
         </div>
       )}
-      {/* Floating Cart Button */}
+
+      {/* Toast for add-to-cart */}
+      {toast && (
+        <Toast
+          message={toast}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Floating Cart Button - sticky for mobile, floating for desktop */}
       {hasMounted && cart.length > 0 && (
         <button
           onClick={goToCart}
@@ -394,6 +429,7 @@ export default function MenuPage() {
             position: "fixed",
             right: 24,
             bottom: 24,
+            left: "unset",
             background: "#0070f3",
             color: "#fff",
             border: "none",
@@ -408,6 +444,8 @@ export default function MenuPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "transform 0.18s cubic-bezier(.45,1.8,.6,1)",
+            transform: cartBump ? "scale(1.13)" : "none",
           }}
           aria-label="View cart"
         >
@@ -428,12 +466,39 @@ export default function MenuPage() {
               alignItems: "center",
               justifyContent: "center",
               border: "2px solid #0070f3",
+              boxShadow: cartBump ? "0 0 0 5px #0070f33a" : undefined,
+              transition: "box-shadow 0.18s cubic-bezier(.45,1.8,.6,1)",
             }}
           >
             {cart.reduce((sum, item) => sum + item.quantity, 0)}
           </span>
         </button>
       )}
+
+      {/* Sticky cart button for mobile (shows at the bottom if screen width < 600px) */}
+      <style>
+        {`
+          @media (max-width: 600px) {
+            button[aria-label="View cart"] {
+              right: 16px !important;
+              left: 16px !important;
+              width: calc(100vw - 32px) !important;
+              max-width: 440px;
+              border-radius: 32px !important;
+              height: 54px !important;
+              font-size: 19px;
+              bottom: 14px !important;
+              justify-content: center !important;
+            }
+            button[aria-label="View cart"] > span {
+              position: static !important;
+              margin-left: 10px;
+              margin-top: 0;
+              border-width: 1.5px;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 }

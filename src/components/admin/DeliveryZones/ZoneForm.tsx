@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import ZoneWindowsEditor from "./ZoneWindowsEditor";
-import { normalizeZoneGeojson } from "../../utils/normalizeGeojson";
+import { normalizeZoneGeojson } from "@/utils/normalizeGeojson";
 import { findOverlappingZones, mergeZones } from "./geojsonUtils";
 
 interface Zone {
