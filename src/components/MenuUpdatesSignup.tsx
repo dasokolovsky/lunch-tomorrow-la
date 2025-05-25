@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
+import { formatPhoneNumber, formatPhoneForAuth, isValidUSPhoneNumber } from '@/utils/phoneFormatter';
 
 interface MenuUpdatesSignupProps {
   onSuccess?: () => void;
@@ -15,7 +16,7 @@ export default function MenuUpdatesSignup({ onSuccess }: MenuUpdatesSignupProps)
   const formatPhoneNumber = (value: string) => {
     // Remove all non-digits
     const digits = value.replace(/\D/g, '');
-    
+
     // Format as (XXX) XXX-XXXX
     if (digits.length >= 6) {
       return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 10)}`;
@@ -31,17 +32,19 @@ export default function MenuUpdatesSignup({ onSuccess }: MenuUpdatesSignupProps)
     setPhone(formatted);
   };
 
-  const getCleanPhoneNumber = (formattedPhone: string) => {
-    const digits = formattedPhone.replace(/\D/g, '');
-    return digits.length === 10 ? `+1${digits}` : '';
-  };
+  // Remove the duplicate function since we're using the utility
+  // const getCleanPhoneNumber = (formattedPhone: string) => {
+  //   const digits = formattedPhone.replace(/\D/g, '');
+  //   return digits.length === 10 ? `+1${digits}` : '';
+  // };
 
   const handleSendCode = async () => {
-    const cleanPhone = getCleanPhoneNumber(phone);
-    if (!cleanPhone) {
-      setError('Please enter a valid phone number');
+    if (!isValidUSPhoneNumber(phone)) {
+      setError('Please enter a valid US phone number');
       return;
     }
+
+    const cleanPhone = formatPhoneForAuth(phone);
 
     setLoading(true);
     setError(null);
@@ -67,11 +70,12 @@ export default function MenuUpdatesSignup({ onSuccess }: MenuUpdatesSignupProps)
   };
 
   const handleVerifyCode = async () => {
-    const cleanPhone = getCleanPhoneNumber(phone);
-    if (!cleanPhone || !verificationCode) {
+    if (!isValidUSPhoneNumber(phone) || !verificationCode) {
       setError('Please enter the verification code');
       return;
     }
+
+    const cleanPhone = formatPhoneForAuth(phone);
 
     setLoading(true);
     setError(null);

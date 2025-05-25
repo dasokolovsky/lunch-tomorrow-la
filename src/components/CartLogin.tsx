@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "@/utils/supabaseClient";
+import { formatPhoneNumber, formatPhoneForAuth, isValidUSPhoneNumber } from "@/utils/phoneFormatter";
 
 interface CartLoginProps {
   onLoginSuccess: () => void;
@@ -40,7 +41,17 @@ export default function CartLogin({ onLoginSuccess }: CartLoginProps) {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithOtp({ phone });
+      // Validate phone number
+      if (!isValidUSPhoneNumber(phone)) {
+        setError("Please enter a valid US phone number");
+        setLoading(false);
+        return;
+      }
+
+      // Format phone for authentication
+      const formattedPhone = formatPhoneForAuth(phone);
+
+      const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
       if (error) {
         console.error("Phone login error:", error);
         setError(error.message);
@@ -61,8 +72,11 @@ export default function CartLogin({ onLoginSuccess }: CartLoginProps) {
     setLoading(true);
 
     try {
+      // Use the same formatted phone number for verification
+      const formattedPhone = formatPhoneForAuth(phone);
+
       const { data, error } = await supabase.auth.verifyOtp({
-        phone,
+        phone: formattedPhone,
         token: otp,
         type: "sms"
       });
@@ -107,13 +121,13 @@ export default function CartLogin({ onLoginSuccess }: CartLoginProps) {
               <input
                 type="tel"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+1 (555) 123-4567"
+                onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
+                placeholder="(555) 123-4567"
                 required
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Include country code (e.g., +1 for US)
+                US phone number (we'll add +1 automatically)
               </p>
             </div>
 
@@ -125,7 +139,7 @@ export default function CartLogin({ onLoginSuccess }: CartLoginProps) {
 
             <button
               type="submit"
-              disabled={loading || !phone.trim()}
+              disabled={loading || !isValidUSPhoneNumber(phone)}
               className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-lg transition-colors"
             >
               {loading ? "Sending..." : "Send Verification Code"}
@@ -153,7 +167,7 @@ export default function CartLogin({ onLoginSuccess }: CartLoginProps) {
                 maxLength={6}
               />
               <p className="text-xs text-gray-500 mt-1">
-                Enter the 6-digit code sent to {phone}
+                Enter the 6-digit code sent to +1 {phone}
               </p>
             </div>
 

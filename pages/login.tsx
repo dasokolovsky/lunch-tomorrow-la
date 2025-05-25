@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { supabase } from "@/utils/supabaseClient";
+import { formatPhoneNumber, formatPhoneForAuth, isValidUSPhoneNumber } from "@/utils/phoneFormatter";
 
 /**
  * PhoneNumberLoginPage
@@ -35,7 +36,18 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ phone });
+
+    // Validate phone number
+    if (!isValidUSPhoneNumber(phone)) {
+      setError("Please enter a valid US phone number");
+      setLoading(false);
+      return;
+    }
+
+    // Format phone for authentication
+    const formattedPhone = formatPhoneForAuth(phone);
+
+    const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
     if (error) {
       setError(error.message);
     } else {
@@ -48,7 +60,9 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { data, error } = await supabase.auth.verifyOtp({ phone, token: otp, type: "sms" });
+    // Use the same formatted phone number for verification
+    const formattedPhone = formatPhoneForAuth(phone);
+    const { data, error } = await supabase.auth.verifyOtp({ phone: formattedPhone, token: otp, type: "sms" });
     if (error) {
       setError(error.message);
     } else {
@@ -81,8 +95,8 @@ export default function LoginPage() {
             <input
               type="tel"
               value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="+1234567890"
+              onChange={e => setPhone(formatPhoneNumber(e.target.value))}
+              placeholder="(555) 123-4567"
               required
               style={{ marginLeft: 8, width: 200 }}
             />
