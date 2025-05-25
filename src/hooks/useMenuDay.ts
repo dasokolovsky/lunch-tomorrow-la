@@ -113,7 +113,9 @@ export function useMenuDay() {
       const [deliveryYear, deliveryMonth, deliveryDay] = deliveryDateString.split('-').map(Number);
 
       // Calculate cutoff date (day before delivery) in Pacific timezone
-      const cutoffDate = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay - 1));
+      const deliveryDateObj = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay));
+      const cutoffDate = new Date(deliveryDateObj);
+      cutoffDate.setDate(cutoffDate.getDate() - 1);
 
       const DAYS_OF_WEEK = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
       const cutoffDayIndex = cutoffDate.getUTCDay(); // Use UTC day to avoid timezone issues
@@ -128,7 +130,8 @@ export function useMenuDay() {
 
       // Set the full cutoff datetime in Pacific timezone
       const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number);
-      const cutoffDateTime = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay - 1, cutoffHours, cutoffMinutes, 0, 0));
+      const cutoffDateTime = new Date(cutoffDate);
+      cutoffDateTime.setUTCHours(cutoffHours, cutoffMinutes, 0, 0);
 
       // Calculate countdown
       const timeDiff = cutoffDateTime.getTime() - now.getTime();
