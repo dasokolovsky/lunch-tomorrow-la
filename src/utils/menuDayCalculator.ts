@@ -188,7 +188,6 @@ export async function getLastAvailableMenu(): Promise<{ date: string; displayDat
  */
 export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<MenuDayInfo> {
   const now = getPacificTime();
-  // const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
   // Find the next available menu by checking each potential delivery day
   // Start from tomorrow since this is "lunch tomorrow"
