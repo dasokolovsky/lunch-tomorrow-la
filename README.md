@@ -1,4 +1,15 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Lunch Tomorrow
+
+A Next.js food delivery application that allows users to order lunch for next-day delivery.
+
+## Features
+
+- 🍽️ Daily menu management
+- 📍 Geographic delivery zone validation
+- 💳 Stripe payment integration with saved payment methods
+- 📱 SMS authentication via Supabase
+- 🗺️ Interactive delivery zone maps
+- 👨‍💼 Admin dashboard for menu and order management
 
 ## Getting Started
 
@@ -15,10 +26,6 @@ bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
 

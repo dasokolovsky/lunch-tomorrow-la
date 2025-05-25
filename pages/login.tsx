@@ -63,7 +63,7 @@ export default function LoginPage() {
         cart = JSON.parse(localStorage.getItem("cart") || "[]");
       } catch {}
       if (cart.length > 0) {
-        router.push("/checkout");
+        router.push("/cart");
       } else {
         router.push("/menu");
       }

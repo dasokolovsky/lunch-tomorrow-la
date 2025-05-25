@@ -1,8 +1,9 @@
 import React, { useEffect } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import type { LeafletMapUserProps } from "@/types";
 
-export default function LeafletMapUser({ zones, userLoc, highlightZone }: any) {
+export default function LeafletMapUser({ zones, userLoc, highlightZone }: LeafletMapUserProps) {
   useEffect(() => {
     const map = L.map("user-map").setView([37, -95], 4);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {

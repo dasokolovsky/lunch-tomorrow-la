@@ -2,7 +2,7 @@ import Stripe from "stripe";
 import { createClient } from "@supabase/supabase-js";
 import type { NextApiRequest, NextApiResponse } from "next";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2022-11-15" });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(400).json({ error: "Invalid method" });
     return;
   }
-  const { cart, tip, userId, paymentMethodId } = req.body;
+  const { cart, tip, userId, paymentMethodId, delivery_date } = req.body;
   if (!cart || !userId || !paymentMethodId) {
     res.status(400).json({ error: "Missing required fields" });
     return;
