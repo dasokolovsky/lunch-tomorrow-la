@@ -194,6 +194,7 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
   // Start from tomorrow since this is "lunch tomorrow"
   const deliveryDate = new Date(now);
   deliveryDate.setDate(deliveryDate.getDate() + 1); // Start from tomorrow
+
   let foundMenu = false;
   let attempts = 0;
   const maxAttempts = 14; // Check up to 2 weeks ahead
