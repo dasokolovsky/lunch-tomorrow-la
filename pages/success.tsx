@@ -117,7 +117,7 @@ export default function SuccessPage() {
             </div>
             <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
             <p className="text-lg opacity-90">
-              Thank you for your order. We'll prepare your fresh lunch for delivery.
+              Thank you for your order. We&apos;ll prepare your fresh lunch for delivery.
             </p>
           </div>
         </div>
@@ -245,7 +245,7 @@ export default function SuccessPage() {
             <div>
               <h4 className="font-medium text-blue-900 mb-1">What happens next?</h4>
               <ul className="text-sm text-blue-800 space-y-1">
-                <li>• We'll prepare your fresh lunch on the delivery date</li>
+                <li>• We&apos;ll prepare your fresh lunch on the delivery date</li>
                 <li>• You&apos;ll receive updates about your order status</li>
                 <li>• Our delivery team will arrive during your selected time window</li>
                 <li>• Enjoy your delicious meal!</li>

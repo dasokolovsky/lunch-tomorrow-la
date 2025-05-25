@@ -2,20 +2,21 @@ import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
-import { geocodeAddress, type GeocodedAddress } from "@/utils/addressToCoord";
+// import { geocodeAddress } from "@/utils/addressToCoord";
+import { type GeocodedAddress } from "@/utils/addressToCoord";
 import { getDeliveryInfo } from "@/utils/zoneCheck";
 import { saveAddress, getSavedAddress, migrateStoredAddress } from "@/utils/addressStorage";
-import { parseLocationIQAddress, createFormattedAddress, validateUSAddress } from "@/utils/addressFormatter";
+// import { parseLocationIQAddress, createFormattedAddress, validateUSAddress } from "@/utils/addressFormatter";
 import { getBestAddressForDisplay } from "@/utils/addressDisplay";
 import { HiCheckCircle, HiExclamationCircle } from "react-icons/hi";
 import Image from "next/image";
 import type { MenuItem, CartItem, DeliveryZone, UserLocation, DeliveryWindow } from "@/types";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import { MenuErrorFallback } from "@/components/ErrorFallbacks";
-import { Button as UIButton, Card, CardContent, Badge, LoadingSpinner } from "@/components/ui";
+import { Card, CardContent, LoadingSpinner } from "@/components/ui";
 import AddressAutocomplete from "@/components/AddressAutocomplete";
-import EnhancedAddressSelector from "@/components/EnhancedAddressSelector";
-import TimeWindowSelector from "@/components/TimeWindowSelector";
+// import EnhancedAddressSelector from "@/components/EnhancedAddressSelector";
+// import TimeWindowSelector from "@/components/TimeWindowSelector";
 import { useMenuDay } from "@/hooks/useMenuDay";
 import MenuUpdatesSignup from "@/components/MenuUpdatesSignup";
 import PastMenuPreview from "@/components/PastMenuPreview";
@@ -25,10 +26,10 @@ import PastMenuPreview from "@/components/PastMenuPreview";
 // Dynamically import Leaflet map, SSR disabled
 const LeafletMap = dynamic(() => import("@/components/LeafletMapUser"), { ssr: false });
 
-function getTodayISO() {
-  const today = new Date();
-  return today.toISOString().substring(0, 10);
-}
+// function getTodayISO() {
+//   const today = new Date();
+//   return today.toISOString().substring(0, 10);
+// }
 
 function loadCart() {
   if (typeof window === "undefined") return [];
@@ -106,7 +107,7 @@ export default function MenuPage() {
 
   const [cart, setCart] = useState<CartItem[]>([]);
   const [hasMounted, setHasMounted] = useState(false);
-  const [countdown, setCountdown] = useState(getCountdownTo6PM());
+  // const [countdown, setCountdown] = useState(getCountdownTo6PM());
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
 
@@ -726,7 +727,7 @@ export default function MenuPage() {
                       <h3 className="text-xl font-semibold text-orange-900 mb-2">
                         {menuDayInfo.noMenusReason === 'temporary'
                           ? "Menu update in progress!"
-                          : "We'll be back soon!"
+                          : "We&apos;ll be back soon!"
                         }
                       </h3>
                       <p className="text-orange-700 mb-4">
