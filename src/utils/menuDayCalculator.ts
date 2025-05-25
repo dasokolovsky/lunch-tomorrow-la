@@ -254,7 +254,8 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
         };
 
         // Create a fresh date object for display formatting to avoid mutation issues
-        const displayDateObj = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay));
+        // Use local time instead of UTC to avoid timezone conversion issues
+        const displayDateObj = new Date(deliveryYear, deliveryMonth - 1, deliveryDay);
 
         console.log('🔍 Creating result for delivery date:', deliveryDateString);
         console.log('🔍 Parsed components:', { deliveryYear, deliveryMonth, deliveryDay });
