@@ -32,7 +32,7 @@ export default function AddressAutocomplete({
   const [isTyping, setIsTyping] = useState(false); // Track if user is actively typing
   const inputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
-  const debounceRef = useRef<NodeJS.Timeout>();
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Debounced address suggestions
   useEffect(() => {

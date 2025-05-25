@@ -201,15 +201,7 @@ export default function MenuPage() {
     }
   }, [isClient]);
 
-  // Update countdown every second (client-side only)
-  useEffect(() => {
-    if (!isClient) return;
-
-    const timer = setInterval(() => {
-      setCountdown(getCountdownTo6PM());
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [isClient]);
+  // Countdown is now handled by useMenuDay hook
 
   // Load saved address after zones are loaded (only once)
   useEffect(() => {
@@ -572,7 +564,7 @@ export default function MenuPage() {
                   onAddressSelected={handleAddressSelected}
                   placeholder="Enter delivery address or use location"
                   disabled={addressValidating}
-                  userLocation={userLoc}
+                  userLocation={userLoc || undefined}
                   suppressInitialSuggestions={suppressSuggestions}
                 />
 

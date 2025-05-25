@@ -67,13 +67,13 @@ export async function getIPLocation(): Promise<GeolocationResult> {
     if (!response.ok) {
       throw new Error(`IP geolocation failed: ${response.status}`);
     }
-    
+
     const data = await response.json();
-    
+
     if (!data.latitude || !data.longitude) {
       throw new Error('Invalid IP geolocation response');
     }
-    
+
     return {
       lat: parseFloat(data.latitude),
       lon: parseFloat(data.longitude),
@@ -98,18 +98,18 @@ export async function reverseGeocode(lat: number, lon: number): Promise<Geocoded
   try {
     const url = `https://us1.locationiq.com/v1/reverse.php?key=${apiKey}&lat=${lat}&lon=${lon}&format=json&addressdetails=1`;
     const response = await fetch(url);
-    
+
     if (!response.ok) {
       console.error('Reverse geocoding failed:', response.status);
       return null;
     }
-    
+
     const data = await response.json();
-    
+
     if (!data || !data.display_name) {
       return null;
     }
-    
+
     return {
       lat,
       lon,
@@ -132,32 +132,32 @@ export async function detectUserLocation(): Promise<DetectedLocation | null> {
     // First try browser geolocation
     console.log('Attempting browser geolocation...');
     const browserLocation = await getBrowserLocation();
-    
+
     // Reverse geocode to get address
     const geocoded = await reverseGeocode(browserLocation.lat, browserLocation.lon);
-    
+
     return {
       ...browserLocation,
       address: geocoded?.display_name,
       display_name: geocoded?.display_name
     };
   } catch (browserError) {
-    console.log('Browser geolocation failed, trying IP fallback:', browserError.message);
-    
+    console.log('Browser geolocation failed, trying IP fallback:', browserError instanceof Error ? browserError.message : String(browserError));
+
     try {
       // Fall back to IP geolocation
       const ipLocation = await getIPLocation();
-      
+
       // Reverse geocode to get address
       const geocoded = await reverseGeocode(ipLocation.lat, ipLocation.lon);
-      
+
       return {
         ...ipLocation,
         address: geocoded?.display_name,
         display_name: geocoded?.display_name
       };
     } catch (ipError) {
-      console.log('IP geolocation also failed:', ipError.message);
+      console.log('IP geolocation also failed:', ipError instanceof Error ? ipError.message : String(ipError));
       return null;
     }
   }
@@ -176,29 +176,29 @@ export function parseUSAddress(displayName: string): {
   try {
     // LocationIQ format is typically: "123 Main St, City, State ZIP, Country"
     const parts = displayName.split(', ');
-    
+
     if (parts.length < 3) {
       return null;
     }
-    
+
     // Extract components (working backwards from the end)
     const country = parts[parts.length - 1];
     const stateZip = parts[parts.length - 2];
     const city = parts[parts.length - 3];
     const addressParts = parts.slice(0, -3);
-    
+
     // Parse state and ZIP from "State ZIP" format
     const stateZipMatch = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/);
     if (!stateZipMatch) {
       return null;
     }
-    
+
     const state = stateZipMatch[1];
     const zip = stateZipMatch[2];
-    
+
     // Join address parts
     const address_line_1 = addressParts.join(', ');
-    
+
     return {
       address_line_1,
       city,

@@ -234,7 +234,7 @@ export default function EnhancedAddressSelector({
                       if (option.type === 'manual') {
                         setShowManualEntry(true);
                         setIsOpen(false);
-                      } else {
+                      } else if (option.address && option.lat !== undefined && option.lon !== undefined) {
                         handleAddressSelect(option.address, option.lat, option.lon);
                       }
                     }}

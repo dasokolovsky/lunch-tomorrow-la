@@ -239,6 +239,7 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState<string>("");
   const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
   const [couponError, setCouponError] = useState<string>("");
+  const [deliveryInfo, setDeliveryInfo] = useState<any>(null);
 
   const router = useRouter();
 
@@ -257,10 +258,10 @@ export default function CartPage() {
 
   // Calculate fees and taxes when cart changes
   useEffect(() => {
-    if (!pricingLoading && cart.length > 0) {
+    if (!pricingLoading && cart.length > 0 && deliveryInfo) {
       calculatePricing();
     }
-  }, [cart, pricingLoading, savedAddress]);
+  }, [cart, pricingLoading, deliveryInfo]);
 
   const calculatePricing = async () => {
     try {
@@ -274,7 +275,7 @@ export default function CartPage() {
         },
         body: JSON.stringify({
           subtotal,
-          delivery_zone_id: savedAddress?.zone_id
+          delivery_zone_id: deliveryInfo?.primaryZone?.id
         })
       });
 
@@ -283,7 +284,7 @@ export default function CartPage() {
         setAppliedFees(pricing.fees || []);
         setTaxAmount(pricing.taxRate || 0);
       }
-    } catch {
+    } catch (error) {
       console.error('Error calculating pricing:', error);
     }
   };
@@ -316,7 +317,7 @@ export default function CartPage() {
       } else {
         setCouponError(result.error || "Invalid coupon code");
       }
-    } catch {
+    } catch (error) {
       console.error('Error applying coupon:', error);
       setCouponError("Failed to apply coupon code");
     }
@@ -373,7 +374,7 @@ export default function CartPage() {
           console.log('🔍 Parsed cart:', parsedCart);
           console.log('🔍 Parsed cart type:', typeof parsedCart);
           console.log('🔍 Parsed cart length:', Array.isArray(parsedCart) ? parsedCart.length : 'not array');
-        } catch {
+        } catch (error) {
           console.log('🔍 Parse error:', error);
           parsedCart = [];
         }
@@ -480,6 +481,7 @@ export default function CartPage() {
           coordinates: [savedAddress.lon, savedAddress.lat] // Note: GeoJSON uses [lon, lat]
         };
         const deliveryInfo = getDeliveryInfo(point, zones || []);
+        setDeliveryInfo(deliveryInfo);
 
         if (deliveryInfo?.isEligible && deliveryInfo.mergedWindows) {
           // Auto-select first available window if none selected
@@ -489,7 +491,7 @@ export default function CartPage() {
             setSelectedWindow(`${todayWindows[0].start}–${todayWindows[0].end}`);
           }
         }
-      } catch {
+      } catch (error) {
         console.error('Failed to load delivery data:', error);
       }
     }
@@ -588,9 +590,15 @@ export default function CartPage() {
 
   async function saveAddressToProfile(address: StoredAddress) {
     try {
-      const parsedAddress = parseUSAddress(address.display_name);
+      const addressString = address.display_name || address.address || '';
+      if (!addressString) {
+        console.log('No address string available for parsing');
+        return;
+      }
+
+      const parsedAddress = parseUSAddress(addressString);
       if (!parsedAddress) {
-        console.log('Could not parse address for saving:', address.display_name);
+        console.log('Could not parse address for saving:', addressString);
         return;
       }
 
@@ -619,7 +627,7 @@ export default function CartPage() {
       if (response.ok) {
         console.log('Address saved to user profile');
       }
-    } catch {
+    } catch (error) {
       console.error('Error saving address to profile:', error);
       // Don't throw - this shouldn't block the order completion
     }
@@ -669,7 +677,7 @@ export default function CartPage() {
       }
 
       setClientSecret(clientSecret);
-    } catch {
+    } catch (error) {
       console.error('Error creating payment intent:', error);
       setPaymentError("Failed to initialize payment. Please try again.");
     }
@@ -720,13 +728,13 @@ export default function CartPage() {
 
       // Save address to user profile for future use
       if (savedAddress && session?.user?.id) {
-        await saveAddressToProfile(savedAddress, session.user.id);
+        await saveAddressToProfile(savedAddress);
       }
 
       setFeedback("Order placed successfully! Thank you!");
       router.push("/success");
 
-    } catch {
+    } catch (error) {
       console.error('Error creating order:', error);
       setPaymentError("Payment succeeded but order creation failed. Please contact support.");
     }

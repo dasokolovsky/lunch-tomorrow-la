@@ -73,7 +73,7 @@ export default function CheckoutForm({ session, onProfileComplete }: CheckoutFor
         if (data?.full_name) {
           onProfileComplete();
         }
-      } catch {
+      } catch (err) {
         console.error("Error in loadProfile:", err);
         setError(`Failed to load profile: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {

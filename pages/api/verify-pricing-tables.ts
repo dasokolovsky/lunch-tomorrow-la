@@ -7,7 +7,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const results = {
+    const results: {
+      tables: Record<string, any>;
+      errors: string[];
+      success: boolean;
+      api_test?: any;
+    } = {
       tables: {},
       errors: [],
       success: true
@@ -19,7 +24,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('pricing_fees')
         .select('*')
         .limit(5);
-      
+
       if (feesError) throw feesError;
       results.tables.pricing_fees = {
         exists: true,
@@ -27,8 +32,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         sample: fees?.[0] || null
       };
     } catch (error) {
-      results.errors.push(`pricing_fees: ${error.message}`);
-      results.tables.pricing_fees = { exists: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      results.errors.push(`pricing_fees: ${errorMessage}`);
+      results.tables.pricing_fees = { exists: false, error: errorMessage };
       results.success = false;
     }
 
@@ -39,15 +45,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select('*')
         .limit(1)
         .single();
-      
+
       if (tipError) throw tipError;
       results.tables.tip_settings = {
         exists: true,
         data: tipSettings
       };
     } catch (error) {
-      results.errors.push(`tip_settings: ${error.message}`);
-      results.tables.tip_settings = { exists: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      results.errors.push(`tip_settings: ${errorMessage}`);
+      results.tables.tip_settings = { exists: false, error: errorMessage };
       results.success = false;
     }
 
@@ -58,15 +65,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .select('*')
         .limit(1)
         .single();
-      
+
       if (taxError) throw taxError;
       results.tables.tax_settings = {
         exists: true,
         data: taxSettings
       };
     } catch (error) {
-      results.errors.push(`tax_settings: ${error.message}`);
-      results.tables.tax_settings = { exists: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      results.errors.push(`tax_settings: ${errorMessage}`);
+      results.tables.tax_settings = { exists: false, error: errorMessage };
       results.success = false;
     }
 
@@ -76,7 +84,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('coupon_codes')
         .select('*')
         .limit(5);
-      
+
       if (couponError) throw couponError;
       results.tables.coupon_codes = {
         exists: true,
@@ -84,8 +92,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         sample: coupons?.[0] || null
       };
     } catch (error) {
-      results.errors.push(`coupon_codes: ${error.message}`);
-      results.tables.coupon_codes = { exists: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      results.errors.push(`coupon_codes: ${errorMessage}`);
+      results.tables.coupon_codes = { exists: false, error: errorMessage };
       results.success = false;
     }
 
@@ -95,15 +104,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .from('pricing_history')
         .select('*')
         .limit(5);
-      
+
       if (historyError) throw historyError;
       results.tables.pricing_history = {
         exists: true,
         count: history?.length || 0
       };
     } catch (error) {
-      results.errors.push(`pricing_history: ${error.message}`);
-      results.tables.pricing_history = { exists: false, error: error.message };
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      results.errors.push(`pricing_history: ${errorMessage}`);
+      results.tables.pricing_history = { exists: false, error: errorMessage };
       results.success = false;
     }
 
@@ -118,7 +128,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     } catch (error) {
       results.api_test = {
         success: false,
-        error: error.message
+        error: error instanceof Error ? error.message : String(error)
       };
     }
 
@@ -126,7 +136,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Error verifying pricing tables:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to verify pricing tables',
       details: error instanceof Error ? error.message : String(error),
       success: false

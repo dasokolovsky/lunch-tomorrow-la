@@ -273,7 +273,7 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
     },
     hasMenus: false,
     noMenusReason,
-    lastAvailableMenu
+    lastAvailableMenu: lastAvailableMenu || undefined
   };
 }
 

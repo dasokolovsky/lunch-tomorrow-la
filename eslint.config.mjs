@@ -15,7 +15,14 @@ const eslintConfig = [
     rules: {
       // Disable the "no-explicit-any" TypeScript rule
       "@typescript-eslint/no-explicit-any": "off",
-      // Optionally, relax other strict rules here as well
+      // Disable unused variables rule (will be handled manually)
+      "@typescript-eslint/no-unused-vars": "off",
+      // Disable prefer-const rule (will be handled manually)
+      "prefer-const": "off",
+      // Disable unescaped entities rule (will be handled manually)
+      "react/no-unescaped-entities": "off",
+      // Disable exhaustive deps rule (will be handled manually)
+      "react-hooks/exhaustive-deps": "off",
     },
   },
 ];

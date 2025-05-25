@@ -200,8 +200,9 @@ export default function DeliveryZonesContent() {
                           </svg>
                         </button>
                         <button
-                          onClick={() => handleDelete(zone.id)}
-                          className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors"
+                          onClick={() => zone.id && handleDelete(zone.id)}
+                          disabled={!zone.id}
+                          className="inline-flex items-center p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title="Delete zone"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

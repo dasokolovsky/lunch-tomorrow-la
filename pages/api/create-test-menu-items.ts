@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     // Get today's date and next few days
     const today = new Date();
-    const dates = [];
+    const dates: string[] = [];
 
     // Create menu items for today and next 7 days
     for (let i = 0; i < 8; i++) {

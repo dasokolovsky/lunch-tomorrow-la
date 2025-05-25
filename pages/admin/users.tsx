@@ -56,6 +56,7 @@ type UserAnalytics = {
   growth_rate: number;
   avg_orders_per_user: number;
   avg_spent_per_user: number;
+  conversion_rate?: number;
 };
 
 type SMSTemplate = {
