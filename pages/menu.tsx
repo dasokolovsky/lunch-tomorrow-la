@@ -600,53 +600,152 @@ export default function MenuPage() {
                 )}
               </div>
 
-              {/* Delivery Time Dropdown */}
+              {/* Delivery Time Selection */}
               {deliveryInfo?.isEligible && (
                 <div>
-                  <div className="relative">
-                    <select
-                      value={selectedWindow || ""}
-                      onChange={(e) => setSelectedWindow(e.target.value || null)}
-                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent appearance-none"
-                      disabled={addressValidating}
-                    >
-                      <option value="">
-                        {cart.length > 0 && selectedWindow ? "Change Delivery Time" : "Select Delivery Time"}
-                      </option>
-                      {(() => {
-                        // Get all unique windows across all days (since we only show one delivery day)
-                        const allWindows = Object.values(deliveryInfo.mergedWindows).flat();
-                        const uniqueWindows = allWindows.filter((window, index, arr) =>
-                          arr.findIndex(w => w.start === window.start && w.end === window.end) === index
-                        );
-
-                        return uniqueWindows.map((window, idx) => {
-                          // Convert 24-hour to 12-hour format
-                          const formatTime = (time: string) => {
-                            const [hours, minutes] = time.split(':');
-                            const hour = parseInt(hours);
-                            const ampm = hour >= 12 ? 'PM' : 'AM';
-                            const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                            return `${displayHour}:${minutes} ${ampm}`;
-                          };
-
-                          const startTime = formatTime(window.start);
-                          const endTime = formatTime(window.end);
-
-                          return (
-                            <option key={`window-${idx}`} value={`${window.start}–${window.end}`}>
-                              {menuDayInfo?.displayDate || 'Selected day'}: {startTime} – {endTime}
-                            </option>
-                          );
-                        });
-                      })()}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
-                      <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 mb-3">
+                      <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
+                      <h3 className="text-lg font-semibold text-gray-900">Choose Delivery Time</h3>
                     </div>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Select your preferred delivery window for {menuDayInfo?.displayDate}
+                    </p>
                   </div>
+
+                  {(() => {
+                    // Get all unique windows across all days (since we only show one delivery day)
+                    const allWindows = Object.values(deliveryInfo.mergedWindows).flat();
+                    const uniqueWindows = allWindows.filter((window, index, arr) =>
+                      arr.findIndex(w => w.start === window.start && w.end === window.end) === index
+                    );
+
+                    // Convert 24-hour to 12-hour format
+                    const formatTime = (time: string) => {
+                      const [hours, minutes] = time.split(':');
+                      const hour = parseInt(hours);
+                      const ampm = hour >= 12 ? 'PM' : 'AM';
+                      const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+                      return `${displayHour}:${minutes} ${ampm}`;
+                    };
+
+                    const timeSlots = uniqueWindows.map((window, idx) => {
+                      const startTime = formatTime(window.start);
+                      const endTime = formatTime(window.end);
+                      const windowValue = `${window.start}–${window.end}`;
+                      const isSelected = selectedWindow === windowValue;
+
+                      // Determine if this is a popular time (11:30 AM - 1:30 PM)
+                      const startHour = parseInt(window.start.split(':')[0]);
+                      const isPopular = startHour >= 11 && startHour <= 13;
+
+                      return {
+                        ...window,
+                        startTime,
+                        endTime,
+                        windowValue,
+                        isSelected,
+                        isPopular,
+                        idx
+                      };
+                    });
+
+                    return (
+                      <>
+                        {/* Desktop: Card Grid */}
+                        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-3">
+                          {timeSlots.map((slot) => (
+                            <button
+                              key={`desktop-window-${slot.idx}`}
+                              onClick={() => setSelectedWindow(slot.windowValue)}
+                              disabled={addressValidating}
+                              className={`
+                                relative p-4 rounded-lg border-2 transition-all duration-200 text-left
+                                ${slot.isSelected
+                                  ? 'border-orange-500 bg-orange-50 shadow-md'
+                                  : 'border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-25 hover:shadow-sm'
+                                }
+                                ${addressValidating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+                              `}
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <svg className={`w-4 h-4 ${slot.isSelected ? 'text-orange-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                  </svg>
+                                  <span className={`font-semibold ${slot.isSelected ? 'text-orange-900' : 'text-gray-900'}`}>
+                                    {slot.startTime} – {slot.endTime}
+                                  </span>
+                                </div>
+                                {slot.isSelected && (
+                                  <svg className="w-5 h-5 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                              {slot.isPopular && (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">
+                                    🔥 Popular
+                                  </span>
+                                </div>
+                              )}
+                              {!slot.isPopular && (
+                                <div className="text-xs text-gray-500">
+                                  Available
+                                </div>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Mobile: Enhanced Dropdown */}
+                        <div className="md:hidden">
+                          <div className="relative">
+                            <select
+                              value={selectedWindow || ""}
+                              onChange={(e) => setSelectedWindow(e.target.value || null)}
+                              className="w-full px-4 py-4 bg-white border-2 border-gray-200 rounded-lg text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 appearance-none font-medium shadow-sm"
+                              disabled={addressValidating}
+                            >
+                              <option value="">
+                                {cart.length > 0 && selectedWindow ? "Change Delivery Time" : "🕐 Select Delivery Time"}
+                              </option>
+                              {timeSlots.map((slot) => (
+                                <option key={`mobile-window-${slot.idx}`} value={slot.windowValue}>
+                                  {slot.startTime} – {slot.endTime} {slot.isPopular ? '🔥' : ''}
+                                </option>
+                              ))}
+                            </select>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                              <svg className="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </div>
+                          </div>
+
+                          {/* Selected time confirmation on mobile */}
+                          {selectedWindow && (
+                            <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <svg className="w-4 h-4 text-orange-600" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="text-sm font-medium text-orange-900">
+                                  Delivery time selected: {(() => {
+                                    const selectedSlot = timeSlots.find(slot => slot.windowValue === selectedWindow);
+                                    return selectedSlot ? `${selectedSlot.startTime} – ${selectedSlot.endTime}` : selectedWindow;
+                                  })()}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
 
