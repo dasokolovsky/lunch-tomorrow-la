@@ -58,6 +58,8 @@ function getPacificTime(): Date {
  * Format date as "Tuesday, March 12th"
  */
 function formatDisplayDate(date: Date): string {
+  console.log('🔍 formatDisplayDate input:', date.toISOString());
+
   const options: Intl.DateTimeFormatOptions = {
     weekday: 'long',
     month: 'long',
@@ -66,12 +68,16 @@ function formatDisplayDate(date: Date): string {
   };
 
   const formatted = date.toLocaleDateString('en-US', options);
+  console.log('🔍 formatDisplayDate formatted:', formatted);
 
   // Add ordinal suffix (st, nd, rd, th)
   const day = date.getDate();
   const suffix = getOrdinalSuffix(day);
 
-  return formatted.replace(/\d+/, `${day}${suffix}`);
+  const result = formatted.replace(/\d+/, `${day}${suffix}`);
+  console.log('🔍 formatDisplayDate result:', result);
+
+  return result;
 }
 
 /**
@@ -250,6 +256,11 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
         // Create a fresh date object for display formatting to avoid mutation issues
         const displayDateObj = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay));
 
+        console.log('🔍 Creating result for delivery date:', deliveryDateString);
+        console.log('🔍 Parsed components:', { deliveryYear, deliveryMonth, deliveryDay });
+        console.log('🔍 Display date object:', displayDateObj.toISOString());
+        console.log('🔍 Display date object day of week:', displayDateObj.getUTCDay());
+
         const result = {
           menuDate: deliveryDateString,
           displayDate: formatDisplayDate(displayDateObj),
@@ -258,6 +269,8 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
           timeUntilCutoff,
           hasMenus: true
         };
+
+        console.log('🔍 Final result:', result);
 
         return result;
       }
