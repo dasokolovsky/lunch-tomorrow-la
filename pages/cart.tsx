@@ -759,7 +759,7 @@ export default function CartPage() {
   const canOrder = !liveCountdown?.isExpired && savedAddress && selectedWindow;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 mobile-keyboard-fix">
       {/* Header */}
       <div className="relative bg-gradient-to-r from-orange-400 to-orange-600 text-white">
         {/* Desktop Background Pattern */}

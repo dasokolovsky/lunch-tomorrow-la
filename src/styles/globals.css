@@ -4,6 +4,78 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile optimizations to prevent zoom and layout issues */
+@layer base {
+  /* Prevent zoom on input focus on iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  input[type="password"],
+  select,
+  textarea {
+    font-size: 16px !important; /* iOS won't zoom if font-size is 16px or larger */
+  }
+
+  /* Prevent text size adjustment on iOS */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  /* Prevent horizontal scrolling */
+  body {
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+  }
+
+  /* Smooth scrolling for better UX */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Prevent zoom on double tap */
+  * {
+    touch-action: manipulation;
+  }
+
+  /* Fix for iOS Safari bottom bar */
+  body {
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+  }
+
+  /* Prevent selection on UI elements */
+  button,
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
+  /* Ensure minimum touch target size for accessibility */
+  button,
+  input,
+  select,
+  textarea,
+  a {
+    min-height: 44px; /* Apple's recommended minimum touch target */
+  }
+
+  /* Fix for mobile keyboard pushing content up */
+  .mobile-keyboard-fix {
+    padding-bottom: env(keyboard-inset-height, 0px);
+  }
+
+  /* Prevent rubber band scrolling on iOS */
+  body {
+    overscroll-behavior: none;
+  }
+}
+
 @layer base {
   body {
     font-family: 'Inter', system-ui, -apple-system, sans-serif;

@@ -442,7 +442,7 @@ export default function MenuPage() {
   const canOrder = deliveryInfo?.isEligible && selectedWindow !== null && !liveCountdown?.isExpired && menuDayInfo?.hasMenus;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans mobile-keyboard-fix">
       {/* Header Section - Mobile First Design */}
       <div className="relative bg-gradient-to-br from-orange-400 via-orange-500 to-red-500 text-white overflow-hidden">
         {/* Background Food Elements - Subtle */}

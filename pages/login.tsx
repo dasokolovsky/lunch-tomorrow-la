@@ -86,7 +86,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: "0 auto", padding: 20 }}>
+    <div className="mobile-keyboard-fix" style={{ maxWidth: 400, margin: "0 auto", padding: 20 }}>
       <h2>Sign In</h2>
       {stage === "start" ? (
         <form onSubmit={handlePhoneLogin} style={{ marginBottom: 18 }}>
