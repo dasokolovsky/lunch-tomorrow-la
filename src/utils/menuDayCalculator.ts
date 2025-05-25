@@ -189,10 +189,19 @@ export async function getLastAvailableMenu(): Promise<{ date: string; displayDat
 export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<MenuDayInfo> {
   const now = getPacificTime();
 
+  // DEBUG: Log the current time and starting point
+  console.log('🔍 Menu Day Calculation Debug:');
+  console.log('- Current Pacific Time:', now.toISOString());
+  console.log('- Current day of week:', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][now.getUTCDay()]);
+  console.log('- Cutoff times from database:', cutoffTimes);
+
   // Find the next available menu by checking each potential delivery day
   // Start from tomorrow since this is "lunch tomorrow"
   const deliveryDate = new Date(now);
   deliveryDate.setDate(deliveryDate.getDate() + 1); // Start from tomorrow
+
+  console.log('- Starting delivery date search from:', deliveryDate.toISOString().split('T')[0]);
+  console.log('- Starting delivery day:', ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][deliveryDate.getUTCDay()]);
 
   let foundMenu = false;
   let attempts = 0;
@@ -234,6 +243,11 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
       cutoffDateTime.setUTCHours(cutoffHours, cutoffMinutes, 0, 0);
 
       // Check if we're still before the cutoff
+      console.log(`- Checking cutoff for ${deliveryDateString}:`);
+      console.log(`  - Current time: ${now.toISOString()}`);
+      console.log(`  - Cutoff time: ${cutoffDateTime.toISOString()}`);
+      console.log(`  - Can still order: ${now <= cutoffDateTime}`);
+
       if (now <= cutoffDateTime) {
         // We can still order for this delivery date
         foundMenu = true;
@@ -247,7 +261,7 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
           isExpired: timeDiff <= 0
         };
 
-        return {
+        const result = {
           menuDate: deliveryDateString,
           displayDate: formatDisplayDate(deliveryDate),
           isNextDay: deliveryDate.toDateString() !== now.toDateString(),
@@ -255,6 +269,11 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
           timeUntilCutoff,
           hasMenus: true
         };
+
+        console.log('✅ FOUND VALID MENU:', result);
+        return result;
+      } else {
+        console.log(`❌ Cutoff passed for ${deliveryDateString}, trying next day...`);
       }
       // If cutoff has passed, continue to next day
     }
