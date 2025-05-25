@@ -191,7 +191,9 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
   // const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
   // Find the next available menu by checking each potential delivery day
+  // Start from tomorrow since this is "lunch tomorrow"
   const deliveryDate = new Date(now);
+  deliveryDate.setDate(deliveryDate.getDate() + 1); // Start from tomorrow
   let foundMenu = false;
   let attempts = 0;
   const maxAttempts = 14; // Check up to 2 weeks ahead
@@ -204,12 +206,17 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
       // Found a menu for this delivery date
       // Now check if we're still within the cutoff time for this menu
 
-      // Calculate cutoff date (day before delivery)
+      // Calculate cutoff date and time
+      // The cutoff is typically the day before delivery, but we need to check the current day
       // Parse delivery date string to get the actual date components
       const [deliveryYear, deliveryMonth, deliveryDay] = deliveryDateString.split('-').map(Number);
 
-      // Create cutoff date (day before delivery) in Pacific timezone
-      const cutoffDate = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay - 1));
+      // Create delivery date in Pacific timezone
+      const deliveryDateObj = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay));
+
+      // Calculate cutoff date (day before delivery)
+      const cutoffDate = new Date(deliveryDateObj);
+      cutoffDate.setDate(cutoffDate.getDate() - 1);
 
       const cutoffDayIndex = cutoffDate.getUTCDay(); // Use UTC day to avoid timezone issues
       const cutoffDayName = DAYS_OF_WEEK[cutoffDayIndex];
@@ -223,7 +230,8 @@ export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<M
 
       // Set the full cutoff datetime in Pacific timezone
       const [cutoffHours, cutoffMinutes] = cutoffTime.split(':').map(Number);
-      const cutoffDateTime = new Date(Date.UTC(deliveryYear, deliveryMonth - 1, deliveryDay - 1, cutoffHours, cutoffMinutes, 0, 0));
+      const cutoffDateTime = new Date(cutoffDate);
+      cutoffDateTime.setUTCHours(cutoffHours, cutoffMinutes, 0, 0);
 
       // Check if we're still before the cutoff
       if (now <= cutoffDateTime) {
