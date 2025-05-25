@@ -9,12 +9,12 @@ import { getSavedAddress, type StoredAddress } from "@/utils/addressStorage";
 import { getBestAddressForDisplay } from "@/utils/addressDisplay";
 import { parseUSAddress } from "@/utils/geolocation";
 import { getDeliveryInfo } from "@/utils/zoneCheck";
-import TimeWindowSelector from "@/components/TimeWindowSelector";
+// import TimeWindowSelector from "@/components/TimeWindowSelector";
 import CartLogin from "@/components/CartLogin";
 import CheckoutForm from "@/components/CheckoutForm";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import type { CartItem, DeliveryZone, DeliveryWindow } from "@/types";
+import type { CartItem } from "@/types";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 import type { Session } from "@supabase/supabase-js";
@@ -98,7 +98,7 @@ function PaymentFormContent({
 
       // Payment successful
       onPaymentSuccess();
-    } catch (error) {
+    } catch {
       onPaymentError("Something went wrong. Please try again.");
       setLoading(false);
     }
@@ -221,7 +221,7 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [savedAddress, setSavedAddress] = useState<StoredAddress | null>(null);
-  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  // const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
   const [selectedWindow, setSelectedWindow] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -243,7 +243,7 @@ export default function CartPage() {
   const router = useRouter();
 
   // Use dynamic menu day calculation
-  const { menuDayInfo, loading: menuDayLoading, error: menuDayError, liveCountdown } = useMenuDay();
+  const { menuDayInfo, liveCountdown } = useMenuDay();
 
   // Use pricing settings from admin
   const { settings: pricingSettings, loading: pricingLoading } = usePricingSettings();
@@ -283,7 +283,7 @@ export default function CartPage() {
         setAppliedFees(pricing.fees || []);
         setTaxAmount(pricing.taxRate || 0);
       }
-    } catch (error) {
+    } catch {
       console.error('Error calculating pricing:', error);
     }
   };
@@ -316,7 +316,7 @@ export default function CartPage() {
       } else {
         setCouponError(result.error || "Invalid coupon code");
       }
-    } catch (error) {
+    } catch {
       console.error('Error applying coupon:', error);
       setCouponError("Failed to apply coupon code");
     }
@@ -373,7 +373,7 @@ export default function CartPage() {
           console.log('🔍 Parsed cart:', parsedCart);
           console.log('🔍 Parsed cart type:', typeof parsedCart);
           console.log('🔍 Parsed cart length:', Array.isArray(parsedCart) ? parsedCart.length : 'not array');
-        } catch (error) {
+        } catch {
           console.log('🔍 Parse error:', error);
           parsedCart = [];
         }
@@ -472,7 +472,7 @@ export default function CartPage() {
           console.error('Response text:', responseText);
           zones = [];
         }
-        setDeliveryZones(zones || []);
+        // setDeliveryZones(zones || []);
 
         // Check if address is in delivery zone
         const point: GeoJSON.Point = {
@@ -489,7 +489,7 @@ export default function CartPage() {
             setSelectedWindow(`${todayWindows[0].start}–${todayWindows[0].end}`);
           }
         }
-      } catch (error) {
+      } catch {
         console.error('Failed to load delivery data:', error);
       }
     }
@@ -586,7 +586,7 @@ export default function CartPage() {
     router.push("/menu?edit_address=1");
   }
 
-  async function saveAddressToProfile(address: StoredAddress, userId: string) {
+  async function saveAddressToProfile(address: StoredAddress) {
     try {
       const parsedAddress = parseUSAddress(address.display_name);
       if (!parsedAddress) {
@@ -619,7 +619,7 @@ export default function CartPage() {
       if (response.ok) {
         console.log('Address saved to user profile');
       }
-    } catch (error) {
+    } catch {
       console.error('Error saving address to profile:', error);
       // Don't throw - this shouldn't block the order completion
     }
@@ -669,7 +669,7 @@ export default function CartPage() {
       }
 
       setClientSecret(clientSecret);
-    } catch (error) {
+    } catch {
       console.error('Error creating payment intent:', error);
       setPaymentError("Failed to initialize payment. Please try again.");
     }
@@ -726,7 +726,7 @@ export default function CartPage() {
       setFeedback("Order placed successfully! Thank you!");
       router.push("/success");
 
-    } catch (error) {
+    } catch {
       console.error('Error creating order:', error);
       setPaymentError("Payment succeeded but order creation failed. Please contact support.");
     }

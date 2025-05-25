@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       res.status(405).json({ error: "Method not allowed" });
       return;
     }
-    const { cart, tip, fees, taxAmount, coupon, saveCard, userId, delivery_date } = req.body;
+    const { cart, tip, fees, taxAmount, coupon, saveCard, userId } = req.body;
     if (!cart || !userId) {
       res.status(400).json({ error: "Missing cart or userId" });
       return;

@@ -89,7 +89,7 @@ export default function AdminOrdersPage() {
   // Modals and selections
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<number>>(new Set());
-  const [showBulkActions, setShowBulkActions] = useState(false);
+  // const [showBulkActions, setShowBulkActions] = useState(false);
   const [showOrderLabel, setShowOrderLabel] = useState<Order | null>(null);
 
   // Status updates

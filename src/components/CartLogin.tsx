@@ -92,7 +92,7 @@ export default function CartLogin({ onLoginSuccess }: CartLoginProps) {
       <div className="px-6 py-6 border-b border-gray-100">
         <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">Sign In to Continue</h2>
         <p className="text-sm md:text-base text-gray-600">
-          We'll send you a verification code to complete your order
+          We&apos;ll send you a verification code to complete your order
         </p>
       </div>
 

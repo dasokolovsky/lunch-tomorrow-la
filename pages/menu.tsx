@@ -111,7 +111,7 @@ export default function MenuPage() {
   const router = useRouter();
 
   // Use dynamic menu day calculation
-  const { menuDayInfo, loading: menuDayLoading, error: menuDayError, liveCountdown } = useMenuDay();
+  const { menuDayInfo, liveCountdown } = useMenuDay();
 
   // Delivery state
   const [address, setAddress] = useState("");

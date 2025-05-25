@@ -81,12 +81,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Count active users (ordered in last 45 days)
-    const activeUsers = Array.from(userOrderStats.entries()).filter(([userId, stats]) =>
+    const activeUsers = Array.from(userOrderStats.entries()).filter(([, stats]) =>
       stats.lastOrderDate && new Date(stats.lastOrderDate) > fortyFiveDaysAgo
     ).length;
 
     // Count VIP users ($300+ spent OR 8+ orders)
-    const vipUsers = Array.from(userOrderStats.entries()).filter(([userId, stats]) =>
+    const vipUsers = Array.from(userOrderStats.entries()).filter(([, stats]) =>
       stats.totalSpent >= 300 || stats.orderCount >= 8
     ).length;
 

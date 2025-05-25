@@ -11,14 +11,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           .select('*')
           .eq('is_active', true)
           .order('created_at', { ascending: false }),
-        
+
         supabase
           .from('tip_settings')
           .select('*')
           .order('created_at', { ascending: false })
           .limit(1)
           .single(),
-        
+
         supabase
           .from('tax_settings')
           .select('*')
@@ -46,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     } else if (req.method === "POST") {
       // Calculate pricing for an order
-      const { subtotal, delivery_zone_id, user_location } = req.body;
+      const { subtotal, delivery_zone_id } = req.body;
 
       if (!subtotal || subtotal <= 0) {
         return res.status(400).json({ error: "Invalid subtotal" });
@@ -67,7 +67,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .single();
 
       let totalFees = 0;
-      let feeBreakdown: Array<{name: string, amount: number, type: string}> = [];
+      const feeBreakdown: Array<{name: string, amount: number, type: string}> = [];
       let taxAmount = 0;
 
       // Calculate fees
@@ -101,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Calculate tax
       if (taxSettings?.is_enabled) {
         let taxRate = taxSettings.default_rate;
-        
+
         // Check for zone-specific tax rate
         if (delivery_zone_id && taxSettings.zone_specific_rates) {
           const zoneRate = taxSettings.zone_specific_rates[delivery_zone_id];
@@ -121,8 +121,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         fees: feeBreakdown,
         totalFees,
         taxAmount,
-        taxRate: taxSettings?.is_enabled ? 
-          (delivery_zone_id && taxSettings.zone_specific_rates[delivery_zone_id]) || taxSettings.default_rate 
+        taxRate: taxSettings?.is_enabled ?
+          (delivery_zone_id && taxSettings.zone_specific_rates[delivery_zone_id]) || taxSettings.default_rate
           : 0,
         total
       });
@@ -133,7 +133,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   } catch (error) {
     console.error('Error in pricing-settings API:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       details: error instanceof Error ? error.message : String(error)
     });

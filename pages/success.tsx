@@ -246,7 +246,7 @@ export default function SuccessPage() {
               <h4 className="font-medium text-blue-900 mb-1">What happens next?</h4>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• We'll prepare your fresh lunch on the delivery date</li>
-                <li>• You'll receive updates about your order status</li>
+                <li>• You&apos;ll receive updates about your order status</li>
                 <li>• Our delivery team will arrive during your selected time window</li>
                 <li>• Enjoy your delicious meal!</li>
               </ul>

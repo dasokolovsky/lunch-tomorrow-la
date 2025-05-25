@@ -59,7 +59,7 @@ export default function MenuUpdatesSignup({ onSuccess }: MenuUpdatesSignupProps)
       } else {
         setStep('verification');
       }
-    } catch (err) {
+    } catch {
       setError('Failed to send verification code. Please try again.');
     } finally {
       setLoading(false);
@@ -89,7 +89,7 @@ export default function MenuUpdatesSignup({ onSuccess }: MenuUpdatesSignupProps)
         setStep('success');
         onSuccess?.();
       }
-    } catch (err) {
+    } catch {
       setError('Failed to verify code. Please try again.');
     } finally {
       setLoading(false);
@@ -112,7 +112,7 @@ export default function MenuUpdatesSignup({ onSuccess }: MenuUpdatesSignupProps)
         </div>
         <h3 className="text-lg font-semibold text-green-900 mb-2">You're all set!</h3>
         <p className="text-green-700">
-          We'll send you a text message when new menus are available.
+          We&apos;ll send you a text message when new menus are available.
         </p>
       </div>
     );

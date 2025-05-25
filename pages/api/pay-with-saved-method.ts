@@ -13,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(400).json({ error: "Invalid method" });
     return;
   }
-  const { cart, tip, userId, paymentMethodId, delivery_date } = req.body;
+  const { cart, tip, userId, paymentMethodId } = req.body;
   if (!cart || !userId || !paymentMethodId) {
     res.status(400).json({ error: "Missing required fields" });
     return;

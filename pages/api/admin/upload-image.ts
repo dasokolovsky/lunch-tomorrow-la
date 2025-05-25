@@ -13,8 +13,8 @@ export const config = {
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const TARGET_WIDTH = 400;
-const TARGET_HEIGHT = 300;
+// const TARGET_WIDTH = 400;
+// const TARGET_HEIGHT = 300;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -31,7 +31,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     });
 
-    const [fields, files] = await form.parse(req);
+    const [, files] = await form.parse(req);
 
     const file = Array.isArray(files.image) ? files.image[0] : files.image;
 

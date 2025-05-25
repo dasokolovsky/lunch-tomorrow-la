@@ -107,7 +107,7 @@ export async function hasMenuItems(date: string): Promise<boolean> {
  * Find the next available menu date (skipping closed days)
  */
 export async function findNextAvailableMenuDate(startDate: Date): Promise<Date | null> {
-  let checkDate = new Date(startDate);
+  const checkDate = new Date(startDate);
   let attempts = 0;
   const maxAttempts = 14; // Check up to 2 weeks ahead
 
@@ -156,7 +156,7 @@ function determineNoMenusReason(startDate: Date): 'temporary' | 'longer-term' {
  */
 export async function getLastAvailableMenu(): Promise<{ date: string; displayDate: string } | null> {
   const now = getPacificTime();
-  let checkDate = new Date(now);
+  const checkDate = new Date(now);
   checkDate.setDate(checkDate.getDate() - 1); // Start from yesterday
 
   let attempts = 0;
@@ -188,10 +188,10 @@ export async function getLastAvailableMenu(): Promise<{ date: string; displayDat
  */
 export async function calculateMenuDay(cutoffTimes: OrderCutoffTimes): Promise<MenuDayInfo> {
   const now = getPacificTime();
-  const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+  // const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
   // Find the next available menu by checking each potential delivery day
-  let deliveryDate = new Date(now);
+  const deliveryDate = new Date(now);
   let foundMenu = false;
   let attempts = 0;
   const maxAttempts = 14; // Check up to 2 weeks ahead

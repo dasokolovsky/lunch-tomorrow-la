@@ -73,7 +73,7 @@ export default function CheckoutForm({ session, onProfileComplete }: CheckoutFor
         if (data?.full_name) {
           onProfileComplete();
         }
-      } catch (err) {
+      } catch {
         console.error("Error in loadProfile:", err);
         setError(`Failed to load profile: ${err instanceof Error ? err.message : 'Unknown error'}`);
       } finally {
@@ -106,7 +106,7 @@ export default function CheckoutForm({ session, onProfileComplete }: CheckoutFor
       } else {
         onProfileComplete();
       }
-    } catch (err) {
+    } catch {
       setError("Failed to save profile");
     } finally {
       setSaving(false);

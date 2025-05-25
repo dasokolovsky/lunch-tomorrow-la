@@ -4,7 +4,7 @@ import {
   ChevronUpIcon,
   UserIcon,
   PhoneIcon,
-  EnvelopeIcon,
+  // EnvelopeIcon,
   MapPinIcon,
   ShoppingBagIcon,
   CalendarIcon,
@@ -104,7 +104,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     applyFilters();
-  }, [users, searchTerm, filterType]);
+  }, [users, searchTerm, filterType, applyFilters]);
 
   async function fetchUsers() {
     setLoading(true);
@@ -1197,7 +1197,7 @@ export default function AdminUsersPage() {
                       Clear
                     </button>
                     <span className="text-sm text-gray-500">
-                      Preview: "{message.substring(0, 50)}{message.length > 50 ? '...' : ''}"
+                      Preview: &quot;{message.substring(0, 50)}{message.length > 50 ? '...' : ''}&quot;
                     </span>
                   </div>
                   <button
@@ -1291,7 +1291,7 @@ export default function AdminUsersPage() {
                     <p className="text-sm text-gray-900">
                       <strong>Message:</strong>
                     </p>
-                    <p className="text-sm text-gray-700 mt-1">"{message}"</p>
+                    <p className="text-sm text-gray-700 mt-1">&quot;{message}&quot;</p>
                   </div>
                 </div>
                 <div className="flex justify-center space-x-3 mt-6">

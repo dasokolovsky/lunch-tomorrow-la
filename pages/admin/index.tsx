@@ -132,7 +132,7 @@ export default function AdminDashboard() {
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-red-900 mb-2">⚠️ No Future Menus Scheduled</h3>
                 <p className="text-red-700 mb-4">
-                  There are no menus scheduled for the next 2 weeks. Customers will see a "no menus available" message and won't be able to place orders.
+                  There are no menus scheduled for the next 2 weeks. Customers will see a &quot;no menus available&quot; message and won&apos;t be able to place orders.
                 </p>
                 <Link
                   href="/admin/menu"
