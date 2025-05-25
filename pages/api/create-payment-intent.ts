@@ -76,6 +76,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       currency: "usd",
       customer: stripeCustomerId,
       metadata: { userId },
+      payment_method_types: ['card', 'apple_pay', 'google_pay'],
+      // Remove automatic_payment_methods to respect dashboard settings
+      // automatic_payment_methods: {
+      //   enabled: true,
+      //   allow_redirects: 'never'
+      // }
     };
     if (saveCard) params.setup_future_usage = "off_session";
 
