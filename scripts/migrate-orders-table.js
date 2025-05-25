@@ -6,8 +6,13 @@
 
 const { createClient } = require('@supabase/supabase-js');
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://kdzrnsdbhpxpzelmvyfm.supabase.co';
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtkenJuc2RiaHB4cHplbG12eWZtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0Nzc4MzYyMiwiZXhwIjoyMDYzMzU5NjIyfQ.pGt_HAXv2UVvyItYBikRMvpsG8VywewkVzk5itIN3_M';
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!supabaseUrl || !supabaseServiceKey) {
+  console.error('❌ Missing required environment variables: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY');
+  process.exit(1);
+}
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -17,7 +22,7 @@ async function migrateOrdersTable() {
 
     // First, let's check the current structure of the orders table
     console.log('📋 Checking current orders table structure...');
-    
+
     const { data: orders, error: selectError } = await supabase
       .from('orders')
       .select('*')
@@ -62,7 +67,7 @@ async function migrateOrdersTable() {
 
     if (insertError) {
       console.log('❌ Insert failed (expected if columns don\'t exist):', insertError.message);
-      
+
       // Check which columns are missing
       if (insertError.message.includes('delivery_notes')) {
         console.log('❌ delivery_notes column is missing');
@@ -85,7 +90,7 @@ async function migrateOrdersTable() {
 
       console.log('\n📋 MANUAL MIGRATION REQUIRED:');
       console.log('Please run the following SQL commands in your Supabase SQL Editor:\n');
-      
+
       console.log('-- Add missing columns to orders table');
       console.log('ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_notes TEXT;');
       console.log('ALTER TABLE orders ADD COLUMN IF NOT EXISTS delivery_fee DECIMAL(10,2);');
@@ -110,7 +115,7 @@ async function migrateOrdersTable() {
     } else {
       console.log('✅ Test insert successful! All columns exist.');
       console.log('📝 Inserted test order:', insertData[0]);
-      
+
       // Clean up test record
       if (insertData && insertData[0]) {
         await supabase
