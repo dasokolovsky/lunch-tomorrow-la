@@ -555,7 +555,7 @@ export default function MenuPage() {
 
             {/* Form Section - Only show when menus are available */}
             {menuDayInfo?.hasMenus !== false && (
-              <div className="px-6 py-4 space-y-4">
+              <div className="px-6 py-4 space-y-5">
               {/* Address Input */}
               <div>
                 <AddressAutocomplete
@@ -591,9 +591,6 @@ export default function MenuPage() {
                         <p className="text-sm font-medium text-green-800">
                           ✓ Delivery available on {menuDayInfo?.displayDate}
                         </p>
-                        <p className="text-xs text-green-600 mt-1">
-                          Choose your delivery time below
-                        </p>
                       </div>
                     </div>
                   </div>
@@ -603,16 +600,27 @@ export default function MenuPage() {
               {/* Delivery Time Selection */}
               {deliveryInfo?.isEligible && (
                 <div>
-                  <div className="mb-3">
+                  {/* Desktop: Show full header */}
+                  <div className="hidden md:block px-6 mb-4">
                     <div className="flex items-center gap-2 mb-3">
                       <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <h3 className="text-lg font-semibold text-gray-900">Choose Delivery Time</h3>
                     </div>
-                    <p className="text-sm text-gray-600 mb-4">
+                    <p className="text-sm text-gray-600">
                       Select your preferred delivery window for {menuDayInfo?.displayDate}
                     </p>
+                  </div>
+
+                  {/* Mobile: Simple header */}
+                  <div className="md:hidden px-6 mb-2">
+                    <h3 className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                      <svg className="w-4 h-4 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Delivery Time
+                    </h3>
                   </div>
 
                   {(() => {
@@ -655,7 +663,7 @@ export default function MenuPage() {
                     return (
                       <>
                         {/* Desktop: Card Grid or Single Card */}
-                        <div className={`hidden md:block ${timeSlots.length === 1 ? '' : 'grid md:grid-cols-2 lg:grid-cols-3 gap-3'}`}>
+                        <div className={`hidden md:block px-6 ${timeSlots.length === 1 ? '' : 'grid md:grid-cols-2 lg:grid-cols-3 gap-3'}`}>
                           {timeSlots.length === 1 ? (
                             // Single window: Special centered layout
                             <div className="max-w-md mx-auto">
@@ -766,40 +774,36 @@ export default function MenuPage() {
                         </div>
 
                         {/* Mobile: Enhanced Dropdown or Single Card */}
-                        <div className="md:hidden">
+                        <div className="md:hidden px-6">
                           {timeSlots.length === 1 ? (
-                            // Single window: Card layout for mobile too
-                            <div className="bg-gradient-to-br from-orange-50 to-orange-100 border-2 border-orange-200 rounded-xl p-5">
-                              <div className="text-center mb-4">
-                                <div className="w-10 h-10 mx-auto mb-2 bg-orange-200 rounded-full flex items-center justify-center">
-                                  <svg className="w-5 h-5 text-orange-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>
+                            // Single window: Compact card for mobile
+                            <div className="bg-gradient-to-r from-orange-50 to-orange-100 border border-orange-200 rounded-lg p-4">
+                              <div className="flex items-center justify-between mb-3">
+                                <div>
+                                  <h4 className="text-base font-bold text-gray-900">
+                                    {timeSlots[0].startTime} – {timeSlots[0].endTime}
+                                  </h4>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    {timeSlots[0].isPopular && (
+                                      <span className="text-xs bg-orange-200 text-orange-800 px-2 py-0.5 rounded-full font-medium">
+                                        🔥 Popular
+                                      </span>
+                                    )}
+                                    <span className="text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-medium">
+                                      Available
+                                    </span>
+                                  </div>
                                 </div>
-                                <h4 className="text-lg font-bold text-gray-900 mb-1">
-                                  {timeSlots[0].startTime} – {timeSlots[0].endTime}
-                                </h4>
-                                <p className="text-sm text-gray-600">
-                                  Only delivery window available
-                                </p>
-                              </div>
-
-                              <div className="flex items-center justify-center gap-2 mb-4">
-                                {timeSlots[0].isPopular && (
-                                  <span className="text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded-full font-medium">
-                                    🔥 Popular
-                                  </span>
-                                )}
-                                <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-medium">
-                                  ✅ Available
-                                </span>
+                                <svg className="w-6 h-6 text-orange-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
                               </div>
 
                               <button
                                 onClick={() => setSelectedWindow(timeSlots[0].windowValue)}
                                 disabled={addressValidating}
                                 className={`
-                                  w-full py-3 px-4 rounded-lg font-semibold transition-all duration-200
+                                  w-full py-2.5 px-4 rounded-lg font-semibold transition-all duration-200 text-sm
                                   ${timeSlots[0].isSelected
                                     ? 'bg-orange-600 text-white shadow-md'
                                     : 'bg-orange-500 hover:bg-orange-600 text-white shadow-sm'
