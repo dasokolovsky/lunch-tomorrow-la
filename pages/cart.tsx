@@ -140,9 +140,7 @@ function PaymentFormContent({
               wallets: {
                 applePay: 'auto',
                 googlePay: 'auto'
-              },
-              // Explicitly disable unwanted payment methods
-              paymentMethodTypes: ['card', 'apple_pay', 'google_pay']
+              }
             }}
             onReady={() => setPaymentElementReady(true)}
             onLoadError={(error) => {
