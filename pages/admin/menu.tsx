@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/utils/supabaseClient";
 import Image from "next/image";
 import ImageUpload from "@/components/admin/ImageUpload";
@@ -37,7 +37,7 @@ export default function AdminMenuTablePage() {
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   // Fetch all menu items with their menu date
-  async function fetchItems() {
+  const fetchItems = useCallback(async () => {
     setLoading(true);
     setError(null);
 
@@ -96,12 +96,11 @@ export default function AdminMenuTablePage() {
 
     setItems(sorted as MenuItem[]);
     setLoading(false);
-  }
+  }, [filterDate, search]);
 
   useEffect(() => {
     fetchItems();
-    // eslint-disable-next-line
-  }, [filterDate, search]);
+  }, [filterDate, search, fetchItems]);
 
   // Open modal for new item
   function openAddModal() {
