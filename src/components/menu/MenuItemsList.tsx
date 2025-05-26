@@ -1,5 +1,6 @@
 import React, { memo } from 'react';
 import Image from 'next/image';
+import VirtualizedMenuList from './VirtualizedMenuList';
 import type { MenuItem } from '@/types';
 import type { MenuDayInfo } from '@/utils/menuDayCalculator';
 import ErrorBoundary from '@/components/ErrorBoundary';
@@ -28,9 +29,9 @@ interface MenuItemsListProps {
 }
 
 // Memoized individual menu item component
-const MenuItemCard = memo(({ 
-  item, 
-  canOrder, 
+const MenuItemCard = memo(({
+  item,
+  canOrder,
   onAddToCart,
   liveCountdown,
   menuDayInfo,
@@ -169,28 +170,15 @@ export default function MenuItemsList({
             <p className="text-gray-600">Check back later for delicious offerings!</p>
           </div>
         ) : (
-          <div className="space-y-4">
-            {menuItems.map((item) => (
-              <ErrorBoundary
-                key={item.id}
-                fallback={
-                  <div className="bg-gray-100 border border-gray-200 rounded-lg p-4 text-center">
-                    <p className="text-gray-500">Unable to load this item</p>
-                  </div>
-                }
-              >
-                <MenuItemCard
-                  item={item}
-                  canOrder={canOrder}
-                  onAddToCart={onAddToCart}
-                  liveCountdown={liveCountdown}
-                  menuDayInfo={menuDayInfo}
-                  deliveryInfo={deliveryInfo}
-                  selectedWindow={selectedWindow}
-                />
-              </ErrorBoundary>
-            ))}
-          </div>
+          <VirtualizedMenuList
+            menuItems={menuItems}
+            canOrder={canOrder}
+            onAddToCart={onAddToCart}
+            liveCountdown={liveCountdown}
+            menuDayInfo={menuDayInfo}
+            deliveryInfo={deliveryInfo}
+            selectedWindow={selectedWindow}
+          />
         )}
       </ErrorBoundary>
     </div>

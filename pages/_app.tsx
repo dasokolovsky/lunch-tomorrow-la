@@ -3,6 +3,8 @@ import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import QueryProvider from "@/components/providers/QueryProvider";
+import OfflineIndicator, { PWAInstallPrompt, UpdatePrompt } from "@/components/ui/OfflineIndicator";
+import { useServiceWorker } from "@/hooks/useServiceWorker";
 import type { AppProps } from "next/app";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -16,6 +18,36 @@ function logError(error: Error, errorInfo: React.ErrorInfo) {
     // Example: Send to Sentry, LogRocket, etc.
     // Sentry.captureException(error, { contexts: { react: errorInfo } });
   }
+}
+
+// App wrapper component with service worker integration
+function AppWrapper({ Component, pageProps }: AppProps) {
+  const { canInstall, showUpdatePrompt, actions } = useServiceWorker();
+
+  return (
+    <>
+      <Component {...pageProps} />
+
+      {/* Offline/Online indicator */}
+      <OfflineIndicator />
+
+      {/* PWA install prompt */}
+      {canInstall && (
+        <PWAInstallPrompt
+          onInstall={actions.installPWA}
+          onDismiss={() => {/* Handle dismiss */}}
+        />
+      )}
+
+      {/* Service worker update prompt */}
+      {showUpdatePrompt && (
+        <UpdatePrompt
+          onUpdate={actions.activateUpdate}
+          onDismiss={actions.dismissUpdate}
+        />
+      )}
+    </>
+  );
 }
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -38,7 +70,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <QueryProvider>
       <ErrorBoundary onError={logError}>
         <Elements stripe={stripePromise} options={elementsOptions}>
-          <Component {...pageProps} />
+          <AppWrapper Component={Component} pageProps={pageProps} />
         </Elements>
       </ErrorBoundary>
     </QueryProvider>
