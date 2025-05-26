@@ -2,6 +2,7 @@ import "@/styles/globals.css";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import QueryProvider from "@/components/providers/QueryProvider";
 import type { AppProps } from "next/app";
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -34,10 +35,12 @@ export default function App({ Component, pageProps }: AppProps) {
   };
 
   return (
-    <ErrorBoundary onError={logError}>
-      <Elements stripe={stripePromise} options={elementsOptions}>
-        <Component {...pageProps} />
-      </Elements>
-    </ErrorBoundary>
+    <QueryProvider>
+      <ErrorBoundary onError={logError}>
+        <Elements stripe={stripePromise} options={elementsOptions}>
+          <Component {...pageProps} />
+        </Elements>
+      </ErrorBoundary>
+    </QueryProvider>
   );
 }

@@ -4,6 +4,7 @@ import type { DeliveryZone, UserLocation, DeliveryWindow } from '@/types';
 import { getDeliveryInfo } from '@/utils/zoneCheck';
 import { saveAddress, getSavedAddress, migrateStoredAddress } from '@/utils/addressStorage';
 import { getBestAddressForDisplay } from '@/utils/addressDisplay';
+import { useDeliveryZones } from './queries/useDeliveryQueries';
 
 interface DeliveryInfo {
   isEligible: boolean;
@@ -14,7 +15,6 @@ interface DeliveryInfo {
 
 export function useDeliveryValidation() {
   const [address, setAddress] = useState("");
-  const [zones, setZones] = useState<DeliveryZone[]>([]);
   const [userLoc, setUserLoc] = useState<UserLocation | null>(null);
   const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo | null>(null);
   const [addressError, setAddressError] = useState("");
@@ -22,13 +22,8 @@ export function useDeliveryValidation() {
   const [suppressSuggestions, setSuppressSuggestions] = useState(false);
   const [savedAddressLoaded, setSavedAddressLoaded] = useState(false);
 
-  // Fetch zones once on mount
-  useEffect(() => {
-    fetch("/api/delivery-zones")
-      .then(r => r.json())
-      .then(setZones)
-      .catch(() => setZones([]));
-  }, []);
+  // Use React Query for zones
+  const { data: zones = [], isLoading: zonesLoading } = useDeliveryZones();
 
   // Migrate addresses on mount
   useEffect(() => {
@@ -157,6 +152,7 @@ export function useDeliveryValidation() {
     addressError,
     addressValidating,
     suppressSuggestions,
+    zonesLoading,
     handleAddressSelected,
     handleAddressChange,
     validateAddress,

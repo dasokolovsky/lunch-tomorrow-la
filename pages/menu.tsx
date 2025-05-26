@@ -10,6 +10,7 @@ import { useMenuDay } from "@/hooks/useMenuDay";
 import { useCart } from "@/hooks/useCart";
 import { useDeliveryValidation } from "@/hooks/useDeliveryValidation";
 import { useMenuData } from "@/hooks/useMenuData";
+import { useBackgroundSync, useSmartPrefetch } from "@/hooks/useBackgroundSync";
 import MenuHeader from "@/components/menu/MenuHeader";
 import DeliveryTimeSelector from "@/components/menu/DeliveryTimeSelector";
 import MenuItemsList from "@/components/menu/MenuItemsList";
@@ -26,7 +27,7 @@ export default function MenuPage() {
 
   // Use custom hooks for state management
   const { menuDayInfo, liveCountdown } = useMenuDay();
-  const { menuItems, loading, error } = useMenuData(menuDayInfo);
+  const { menuItems, loading, error, isRefetching } = useMenuData(menuDayInfo);
   const { cart, selectedWindow, hasMounted, addToCart, clearCart, updateSelectedWindow } = useCart();
   const {
     address,
@@ -36,9 +37,14 @@ export default function MenuPage() {
     addressError,
     addressValidating,
     suppressSuggestions,
+    zonesLoading,
     handleAddressSelected,
     handleAddressChange,
   } = useDeliveryValidation();
+
+  // Background sync and smart prefetching
+  const { forceRefresh } = useBackgroundSync();
+  useSmartPrefetch();
 
   // Memoized computed values
   const canOrder = useMemo(() =>
@@ -82,6 +88,16 @@ export default function MenuPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans mobile-keyboard-fix">
+      {/* Background refresh indicator */}
+      {(isRefetching || zonesLoading) && (
+        <div className="fixed top-0 left-0 right-0 z-50 bg-blue-500 text-white text-center py-1 text-sm">
+          <div className="flex items-center justify-center gap-2">
+            <div className="animate-spin rounded-full h-3 w-3 border border-white border-t-transparent"></div>
+            Updating data...
+          </div>
+        </div>
+      )}
+
       <MenuHeader menuDayInfo={menuDayInfo} liveCountdown={liveCountdown} />
 
       {/* Main Content Card - Mobile First */}
