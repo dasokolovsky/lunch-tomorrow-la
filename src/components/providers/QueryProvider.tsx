@@ -17,8 +17,6 @@ export default function QueryProvider({ children }: QueryProviderProps) {
         <>
           <ReactQueryDevtools
             initialIsOpen={false}
-            position="bottom-right"
-            buttonPosition="bottom-right"
           />
           <QueryPerformanceMonitor />
         </>

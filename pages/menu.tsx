@@ -48,7 +48,7 @@ export default function MenuPage() {
 
   // Memoized computed values
   const canOrder = useMemo(() =>
-    deliveryInfo?.isEligible && selectedWindow !== null && !liveCountdown?.isExpired && menuDayInfo?.hasMenus,
+    Boolean(deliveryInfo?.isEligible && selectedWindow !== null && !liveCountdown?.isExpired && menuDayInfo?.hasMenus),
     [deliveryInfo?.isEligible, selectedWindow, liveCountdown?.isExpired, menuDayInfo?.hasMenus]
   );
 

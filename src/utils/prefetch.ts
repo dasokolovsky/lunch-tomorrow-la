@@ -153,11 +153,11 @@ export function clearAllCachedData() {
 export function getCacheStats() {
   const cache = queryClient.getQueryCache();
   const queries = cache.getAll();
-  
+
   const stats = {
     totalQueries: queries.length,
     staleQueries: queries.filter(q => q.isStale()).length,
-    fetchingQueries: queries.filter(q => q.isFetching()).length,
+    fetchingQueries: queries.filter(q => q.state.fetchStatus === 'fetching').length,
     errorQueries: queries.filter(q => q.state.status === 'error').length,
     cacheSize: JSON.stringify(cache).length,
   };

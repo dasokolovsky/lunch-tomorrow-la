@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
-import type { OrderCutoffTimes } from '../../pages/api/settings';
+
+// Local type definition
+interface OrderCutoffTimes {
+  [key: string]: string; // day of week -> cutoff time
+}
 
 // Fetch order cutoff times and settings
 export function useOrderSettings() {
@@ -63,7 +67,7 @@ export function usePricingCalculation() {
 // Update order cutoff times (admin)
 export function useUpdateOrderSettings() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (settings: { order_cutoff_times: OrderCutoffTimes }) => {
       const response = await fetch('/api/admin/settings', {
@@ -73,11 +77,11 @@ export function useUpdateOrderSettings() {
         },
         body: JSON.stringify(settings),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update settings');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -92,7 +96,7 @@ export function useUpdateOrderSettings() {
 // Update pricing settings (admin)
 export function useUpdatePricingSettings() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (settings: any) => {
       const response = await fetch('/api/admin/pricing-settings', {
@@ -102,11 +106,11 @@ export function useUpdatePricingSettings() {
         },
         body: JSON.stringify(settings),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update pricing settings');
       }
-      
+
       return response.json();
     },
     onSuccess: () => {
@@ -121,7 +125,7 @@ export function useUpdatePricingSettings() {
 // Prefetch settings (useful for app initialization)
 export function usePrefetchSettings() {
   const queryClient = useQueryClient();
-  
+
   return {
     prefetchOrderSettings: () => {
       queryClient.prefetchQuery({
@@ -136,7 +140,7 @@ export function usePrefetchSettings() {
         staleTime: 5 * 60 * 1000,
       });
     },
-    
+
     prefetchPricingSettings: () => {
       queryClient.prefetchQuery({
         queryKey: queryKeys.settings.pricing(),

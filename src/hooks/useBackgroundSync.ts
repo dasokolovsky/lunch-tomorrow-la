@@ -6,7 +6,7 @@ import { prefetchCriticalData, invalidateStaleData } from '@/utils/prefetch';
 // Hook for background data synchronization
 export function useBackgroundSync() {
   const queryClient = useQueryClient();
-  const intervalRef = useRef<NodeJS.Timeout>();
+  const intervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const visibilityRef = useRef<boolean>(true);
 
   useEffect(() => {
@@ -19,13 +19,13 @@ export function useBackgroundSync() {
         // Only sync if page is visible to save bandwidth
         if (visibilityRef.current) {
           console.log('🔄 Background sync: Refreshing critical data');
-          
+
           // Invalidate and refetch critical data
           queryClient.invalidateQueries({
             queryKey: queryKeys.delivery.zones(),
             refetchType: 'active',
           });
-          
+
           queryClient.invalidateQueries({
             queryKey: queryKeys.settings.cutoff(),
             refetchType: 'active',
@@ -49,7 +49,7 @@ export function useBackgroundSync() {
           },
           refetchType: 'active',
         });
-        
+
         // Restart background sync
         if (!intervalRef.current) {
           startBackgroundSync();
@@ -109,9 +109,9 @@ export function useBackgroundSync() {
         refetchType: 'active',
       });
     },
-    
+
     prefetchCritical: prefetchCriticalData,
-    
+
     clearCache: () => {
       queryClient.clear();
     },
@@ -129,13 +129,13 @@ export function useSmartPrefetch() {
     const handleMouseEnter = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
       const link = target.closest('a[href]') as HTMLAnchorElement;
-      
+
       if (link) {
         const href = link.getAttribute('href');
-        
+
         // Clear any existing timeout
         clearTimeout(prefetchTimeout);
-        
+
         // Prefetch after a short delay to avoid unnecessary requests
         prefetchTimeout = setTimeout(() => {
           if (href === '/menu') {

@@ -21,7 +21,7 @@ function logError(error: Error, errorInfo: React.ErrorInfo) {
 }
 
 // App wrapper component with service worker integration
-function AppWrapper({ Component, pageProps }: AppProps) {
+function AppWrapper({ Component, pageProps, router }: AppProps) {
   const { canInstall, showUpdatePrompt, actions } = useServiceWorker();
 
   return (
@@ -50,7 +50,7 @@ function AppWrapper({ Component, pageProps }: AppProps) {
   );
 }
 
-export default function App({ Component, pageProps }: AppProps) {
+export default function App({ Component, pageProps, router }: AppProps) {
   const elementsOptions = {
     appearance: {
       theme: 'stripe' as const,
@@ -70,7 +70,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <QueryProvider>
       <ErrorBoundary onError={logError}>
         <Elements stripe={stripePromise} options={elementsOptions}>
-          <AppWrapper Component={Component} pageProps={pageProps} />
+          <AppWrapper Component={Component} pageProps={pageProps} router={router} />
         </Elements>
       </ErrorBoundary>
     </QueryProvider>

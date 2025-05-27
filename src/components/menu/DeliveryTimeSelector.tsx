@@ -29,22 +29,22 @@ export default function DeliveryTimeSelector({
     const allWindows = Object.values(deliveryInfo.mergedWindows).flat();
 
     return allWindows.map((window, idx) => {
-      const startTime = new Date(`1970-01-01T${window.start_time}`).toLocaleTimeString('en-US', {
+      const startTime = new Date(`1970-01-01T${window.start}`).toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
       });
-      const endTime = new Date(`1970-01-01T${window.end_time}`).toLocaleTimeString('en-US', {
+      const endTime = new Date(`1970-01-01T${window.end}`).toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
         hour12: true
       });
 
-      const windowValue = `${menuDayInfo.menuDate}|${window.start_time}-${window.end_time}`;
+      const windowValue = `${menuDayInfo.menuDate}|${window.start}-${window.end}`;
       const isSelected = selectedWindow === windowValue;
 
       // Mark popular times (11 AM - 1 PM)
-      const startHour = parseInt(window.start_time.split(':')[0]);
+      const startHour = parseInt(window.start.split(':')[0]);
       const isPopular = startHour >= 11 && startHour <= 13;
 
       return {
@@ -77,7 +77,7 @@ export default function DeliveryTimeSelector({
           Select your preferred delivery window for {menuDayInfo?.displayDate}
         </p>
       </div>
-      
+
       {/* Mobile: Simple header */}
       <div className="md:hidden px-6 mb-2">
         <h3 className="text-sm font-medium text-gray-700 flex items-center gap-1">

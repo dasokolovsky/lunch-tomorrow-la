@@ -10,9 +10,9 @@ export function useMenuByDate(menuDate: string | null, enabled = true) {
     queryKey: queryKeys.menu.day(menuDate || ''),
     queryFn: async () => {
       if (!menuDate) throw new Error('Menu date is required');
-      
+
       console.log('📅 Fetching menu for date:', menuDate);
-      
+
       const { data: menus, error: menuError } = await supabase
         .from("menus")
         .select("id, date")
@@ -22,12 +22,12 @@ export function useMenuByDate(menuDate: string | null, enabled = true) {
       if (menuError) {
         throw new Error("Error fetching menu: " + menuError.message);
       }
-      
+
       if (!menus || menus.length === 0) {
         console.log('📅 No menu found for date:', menuDate);
         return { menu: null, items: [] };
       }
-      
+
       return { menu: menus[0], items: [] };
     },
     enabled: enabled && !!menuDate,
@@ -42,7 +42,7 @@ export function useMenuItems(menuId: string | null, enabled = true) {
     queryKey: queryKeys.menu.items(menuId || ''),
     queryFn: async () => {
       if (!menuId) throw new Error('Menu ID is required');
-      
+
       const { data: items, error: itemsError } = await supabase
         .from("menu_items")
         .select("*")
@@ -52,7 +52,7 @@ export function useMenuItems(menuId: string | null, enabled = true) {
       if (itemsError) {
         throw new Error("Error fetching menu items: " + itemsError.message);
       }
-      
+
       console.log('📅 Found', items?.length || 0, 'menu items for menu', menuId);
       return items ?? [];
     },
@@ -64,18 +64,18 @@ export function useMenuItems(menuId: string | null, enabled = true) {
 
 // Combined hook for menu and items
 export function useMenuData(menuDayInfo: MenuDayInfo | null) {
-  const menuDate = menuDayInfo?.menuDate;
+  const menuDate = menuDayInfo?.menuDate || null;
   const hasMenus = menuDayInfo?.hasMenus;
-  
+
   // Fetch menu
   const menuQuery = useMenuByDate(menuDate, !!hasMenus);
-  
+
   // Fetch menu items (only if we have a menu)
   const itemsQuery = useMenuItems(
     menuQuery.data?.menu?.id,
     !!menuQuery.data?.menu?.id
   );
-  
+
   return {
     menuItems: itemsQuery.data || [],
     loading: menuQuery.isLoading || itemsQuery.isLoading,
@@ -93,7 +93,7 @@ export function useMenuData(menuDayInfo: MenuDayInfo | null) {
 // Mutation for creating/updating menu items (admin)
 export function useCreateMenuItem() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async (menuItem: Omit<MenuItem, 'id'>) => {
       const { data, error } = await supabase
@@ -101,7 +101,7 @@ export function useCreateMenuItem() {
         .insert(menuItem)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -110,7 +110,7 @@ export function useCreateMenuItem() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.menu.items(data.menu_id)
       });
-      
+
       // Optionally update the cache directly
       queryClient.setQueryData(
         queryKeys.menu.items(data.menu_id),
@@ -126,7 +126,7 @@ export function useCreateMenuItem() {
 // Mutation for updating menu items
 export function useUpdateMenuItem() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, updates }: { id: number; updates: Partial<MenuItem> }) => {
       const { data, error } = await supabase
@@ -135,7 +135,7 @@ export function useUpdateMenuItem() {
         .eq('id', id)
         .select()
         .single();
-      
+
       if (error) throw error;
       return data;
     },
@@ -155,14 +155,14 @@ export function useUpdateMenuItem() {
 // Mutation for deleting menu items
 export function useDeleteMenuItem() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ id, menuId }: { id: number; menuId: string }) => {
       const { error } = await supabase
         .from('menu_items')
         .delete()
         .eq('id', id);
-      
+
       if (error) throw error;
       return { id, menuId };
     },

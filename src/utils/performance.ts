@@ -97,22 +97,10 @@ export function useRenderCount(componentName: string) {
   return renderCount.current;
 }
 
-// Lazy loading utility
+// Lazy loading utility (simplified to avoid TypeScript complexity)
 export function createLazyComponent<T extends React.ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: React.ComponentType
 ) {
-  const LazyComponent = React.lazy(importFn);
-
-  return React.forwardRef<any, React.ComponentProps<T>>((props, ref) =>
-    React.createElement(
-      React.Suspense,
-      {
-        fallback: fallback
-          ? React.createElement(fallback)
-          : React.createElement('div', null, 'Loading...')
-      },
-      React.createElement(LazyComponent, { ...props, ref })
-    )
-  );
+  return React.lazy(importFn);
 }

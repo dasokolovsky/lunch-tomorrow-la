@@ -22,23 +22,23 @@ export default function QueryPerformanceMonitor() {
     const updateStats = () => {
       const cache = queryClient.getQueryCache();
       const queries = cache.getAll();
-      
+
       const totalQueries = queries.length;
       const staleQueries = queries.filter(q => q.isStale()).length;
-      const fetchingQueries = queries.filter(q => q.isFetching()).length;
+      const fetchingQueries = queries.filter(q => q.state.fetchStatus === 'fetching').length;
       const errorQueries = queries.filter(q => q.state.status === 'error').length;
       const successQueries = queries.filter(q => q.state.status === 'success').length;
-      
+
       // Calculate cache hit rate (approximate)
       const cacheHitRate = totalQueries > 0 ? (successQueries / totalQueries) * 100 : 0;
-      
+
       // Calculate average query time (from successful queries)
       const queryTimes = queries
         .filter(q => q.state.status === 'success' && q.state.dataUpdatedAt)
         .map(q => q.state.dataUpdatedAt - (q.state.fetchFailureCount > 0 ? 0 : q.state.dataUpdatedAt));
-      
-      const averageQueryTime = queryTimes.length > 0 
-        ? queryTimes.reduce((sum, time) => sum + time, 0) / queryTimes.length 
+
+      const averageQueryTime = queryTimes.length > 0
+        ? queryTimes.reduce((sum, time) => sum + time, 0) / queryTimes.length
         : 0;
 
       setStats({
@@ -87,43 +87,43 @@ export default function QueryPerformanceMonitor() {
               ✕
             </button>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex justify-between">
               <span>Total Queries:</span>
               <span className="font-bold">{stats.totalQueries}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span>Success:</span>
               <span className="text-green-600 font-bold">{stats.successQueries}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span>Fetching:</span>
               <span className="text-blue-600 font-bold">{stats.fetchingQueries}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span>Stale:</span>
               <span className="text-yellow-600 font-bold">{stats.staleQueries}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span>Errors:</span>
               <span className="text-red-600 font-bold">{stats.errorQueries}</span>
             </div>
-            
+
             <div className="flex justify-between">
               <span>Cache Hit Rate:</span>
               <span className="font-bold">{stats.cacheHitRate.toFixed(1)}%</span>
             </div>
-            
+
             <div className="border-t pt-2 mt-2">
               <div className="text-center text-gray-500">
                 Performance Indicators
               </div>
-              
+
               <div className="mt-1">
                 <div className="flex justify-between">
                   <span>Cache Health:</span>
@@ -135,7 +135,7 @@ export default function QueryPerformanceMonitor() {
                      stats.cacheHitRate > 60 ? '🟡 Fair' : '🔴 Poor'}
                   </span>
                 </div>
-                
+
                 <div className="flex justify-between">
                   <span>Error Rate:</span>
                   <span className={`font-bold ${
@@ -148,7 +148,7 @@ export default function QueryPerformanceMonitor() {
                 </div>
               </div>
             </div>
-            
+
             <div className="border-t pt-2 mt-2">
               <button
                 onClick={() => {
@@ -159,7 +159,7 @@ export default function QueryPerformanceMonitor() {
               >
                 Clear Cache
               </button>
-              
+
               <button
                 onClick={() => {
                   queryClient.invalidateQueries();
