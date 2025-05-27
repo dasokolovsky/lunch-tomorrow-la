@@ -1,6 +1,7 @@
 import "@/styles/globals.css";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
+import { Analytics } from "@vercel/analytics/react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import QueryProvider from "@/components/providers/QueryProvider";
 import OfflineIndicator, { PWAInstallPrompt, UpdatePrompt } from "@/components/ui/OfflineIndicator";
@@ -73,6 +74,7 @@ export default function App({ Component, pageProps, router }: AppProps) {
           <AppWrapper Component={Component} pageProps={pageProps} router={router} />
         </Elements>
       </ErrorBoundary>
+      <Analytics />
     </QueryProvider>
   );
 }
