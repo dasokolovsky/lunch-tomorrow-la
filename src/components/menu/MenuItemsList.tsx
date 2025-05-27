@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import Image from 'next/image';
 import VirtualizedMenuList from './VirtualizedMenuList';
-import type { MenuItem } from '@/types';
+import type { MenuItem, DeliveryWindow, DeliveryZone } from '@/types';
 import type { MenuDayInfo } from '@/utils/menuDayCalculator';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { LoadingSpinner } from '@/components/ui';
@@ -23,6 +23,9 @@ interface MenuItemsListProps {
   } | null;
   deliveryInfo: {
     isEligible: boolean;
+    zones: DeliveryZone[];
+    mergedWindows: Record<string, DeliveryWindow[]>;
+    primaryZone: DeliveryZone | null;
   } | null;
   selectedWindow: string | null;
   onAddToCart: (item: MenuItem) => void;

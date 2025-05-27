@@ -2,9 +2,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "@/utils/supabaseClient";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2024-06-20",
-});
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "POST") {
@@ -39,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const now = new Date();
     const deliveryDate = new Date(order.order_date);
     let isEligibleForAutoRefund = false;
-    
+
     // Get cutoff times from settings
     const { data: settings } = await supabase
       .from('settings')
@@ -49,16 +47,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (settings?.setting_value) {
       const cutoffTimes = settings.setting_value;
-      const dayOfWeek = deliveryDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+      const dayOfWeek = deliveryDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       const cutoffTime = cutoffTimes[dayOfWeek];
-      
+
       if (cutoffTime) {
         // Create cutoff datetime (day before delivery at cutoff time)
         const cutoffDate = new Date(deliveryDate);
         cutoffDate.setDate(cutoffDate.getDate() - 1);
         const [hours, minutes] = cutoffTime.split(':');
         cutoffDate.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        
+
         // If we're before cutoff, eligible for automatic full refund
         isEligibleForAutoRefund = now <= cutoffDate;
       }
@@ -117,12 +115,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // Don't fail the cancellation if notification fails
     }
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       refunded: refundProcessed,
-      message: refundProcessed 
+      message: refundProcessed
         ? "Order cancelled and refund processed"
-        : isEligibleForAutoRefund 
+        : isEligibleForAutoRefund
           ? "Order cancelled. Refund processing may take a few minutes."
           : "Order cancelled. Refund requires admin approval."
     });

@@ -44,7 +44,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (settings?.setting_value) {
       const cutoffTimes = settings.setting_value;
-      const dayOfWeek = deliveryDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+      const dayOfWeek = deliveryDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
       const cutoffTime = cutoffTimes[dayOfWeek];
 
       if (cutoffTime) {

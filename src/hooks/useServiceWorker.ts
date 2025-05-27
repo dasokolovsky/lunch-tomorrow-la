@@ -245,7 +245,7 @@ export function useOfflineDetection() {
       return actuallyOnline;
     } catch (error) {
       // If fetch fails, we're likely offline
-      console.log('📴 Network check failed:', error.message);
+      console.log('📴 Network check failed:', String(error));
       setIsOnline(false);
       setLastNetworkCheck(Date.now());
       return false;

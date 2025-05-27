@@ -1,7 +1,7 @@
 import React, { memo, useMemo } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import Image from 'next/image';
-import type { MenuItem } from '@/types';
+import type { MenuItem, DeliveryWindow, DeliveryZone } from '@/types';
 import type { MenuDayInfo } from '@/utils/menuDayCalculator';
 
 interface VirtualizedMenuListProps {
@@ -17,6 +17,9 @@ interface VirtualizedMenuListProps {
   menuDayInfo: MenuDayInfo | null;
   deliveryInfo: {
     isEligible: boolean;
+    zones: DeliveryZone[];
+    mergedWindows: Record<string, DeliveryWindow[]>;
+    primaryZone: DeliveryZone | null;
   } | null;
   selectedWindow: string | null;
 }

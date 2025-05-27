@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Parse the date to get day of week
     const deliveryDate = new Date(date);
-    const dayOfWeek = deliveryDate.toLocaleDateString('en-US', { weekday: 'lowercase' });
+    const dayOfWeek = deliveryDate.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
     // Get delivery zones and their windows
     const { data: zones, error: zonesError } = await supabase

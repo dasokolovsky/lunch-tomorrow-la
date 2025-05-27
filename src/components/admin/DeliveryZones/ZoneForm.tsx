@@ -121,7 +121,7 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
       onDone();
     } catch (error) {
       console.error('Error saving zone:', error);
-      alert(`Failed to save delivery zone: ${error.message}`);
+      alert(`Failed to save delivery zone: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
