@@ -74,6 +74,17 @@ export default function SuccessPage() {
     fetchLatestOrder();
   }, [session]);
 
+  // Redirect to order page after 3 seconds if we have an order
+  useEffect(() => {
+    if (order?.id) {
+      const timer = setTimeout(() => {
+        router.push(`/order/${order.id}`);
+      }, 3000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [order, router]);
+
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', {
@@ -119,6 +130,11 @@ export default function SuccessPage() {
             <p className="text-lg opacity-90">
               Thank you for your order. We&apos;ll prepare your fresh lunch for delivery.
             </p>
+            {order?.id && (
+              <p className="text-sm opacity-75 mt-2">
+                Redirecting to your order page in a few seconds...
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -222,6 +238,14 @@ export default function SuccessPage() {
 
         {/* Action Buttons */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4">
+          {order?.id && (
+            <button
+              onClick={() => router.push(`/order/${order.id}`)}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            >
+              View Order Details
+            </button>
+          )}
           <button
             onClick={() => router.push('/menu')}
             className="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors"

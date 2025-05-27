@@ -1,14 +1,11 @@
 import React from "react";
 
-const days = [
-  "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"
-];
-
 function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 export default function ZoneWindowsEditor({ windows, setWindows }) {
+  const daysOfWeek = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
   function handleTimeChange(day: string, idx: number, which: "start" | "end", value: string) {
     const updated = { ...windows };
     updated[day] = [...(updated[day] || [])];
@@ -42,7 +39,7 @@ export default function ZoneWindowsEditor({ windows, setWindows }) {
         <div className="text-xs text-gray-500">Times are in 24-hour format</div>
       </div>
 
-      {days.map(day => (
+      {daysOfWeek.map(day => (
         <div key={day} className="border border-gray-200 rounded-lg p-4 bg-white">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center">
@@ -56,7 +53,7 @@ export default function ZoneWindowsEditor({ windows, setWindows }) {
 
             <div className="flex items-center space-x-3">
               {/* Copy from other day */}
-              {days.filter(d => d !== day && (windows[d] || []).length > 0).length > 0 && (
+              {daysOfWeek.filter(d => d !== day && (windows[d] || []).length > 0).length > 0 && (
                 <div className="flex items-center">
                   <label className="text-xs text-gray-600 mr-2">Copy from:</label>
                   <select
@@ -67,7 +64,7 @@ export default function ZoneWindowsEditor({ windows, setWindows }) {
                     className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
                     <option value="">Select day</option>
-                    {days.filter(d => d !== day && (windows[d] || []).length > 0).map(d =>
+                    {daysOfWeek.filter(d => d !== day && (windows[d] || []).length > 0).map(d =>
                       <option value={d} key={d}>{capitalize(d)}</option>
                     )}
                   </select>

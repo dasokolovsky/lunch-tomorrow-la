@@ -25,6 +25,7 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
   );
   const [active, setActive] = useState(editingZone?.active ?? true);
   const [overlaps, setOverlaps] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     setName(editingZone?.name || "");
@@ -64,25 +65,66 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !geojson || !windows) {
-      alert("Missing fields");
+
+    if (saving) return; // Prevent double submission
+
+    // Validation
+    if (!name.trim()) {
+      alert("Zone name is required");
       return;
     }
-    const body = { name, geojson, windows, active };
-    if (editingZone && editingZone.id) {
-      await fetch(`/api/delivery-zones/${editingZone.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-    } else {
-      await fetch("/api/delivery-zones", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
+
+    if (!geojson) {
+      alert("Zone boundary (GeoJSON) is required");
+      return;
     }
-    onDone();
+
+    // Check if at least one time window is configured
+    const hasTimeWindows = Object.values(windows).some(dayWindows =>
+      Array.isArray(dayWindows) && dayWindows.length > 0 &&
+      dayWindows.some(window => window.start && window.end)
+    );
+
+    if (!hasTimeWindows) {
+      alert("At least one delivery time window must be configured");
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const body = { name: name.trim(), geojson, windows, active };
+
+      let response;
+      if (editingZone && editingZone.id) {
+        response = await fetch(`/api/delivery-zones/${editingZone.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      } else {
+        response = await fetch("/api/delivery-zones", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('Save successful:', result);
+
+      onDone();
+    } catch (error) {
+      console.error('Error saving zone:', error);
+      alert(`Failed to save delivery zone: ${error.message}`);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -106,7 +148,7 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
+      <form id="zone-form" onSubmit={handleSubmit} className="px-6 py-6 space-y-6">
         {/* Zone Name */}
         <div>
           <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -118,6 +160,10 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
             onChange={e => setName(e.target.value)}
             placeholder="e.g., Downtown LA, Beverly Hills"
             required
+            autoComplete="off"
+            autoCorrect="off"
+            autoCapitalize="off"
+            spellCheck="false"
             className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
           />
         </div>
@@ -232,10 +278,17 @@ export default function ZoneForm({ editingZone, onDone, existingZones }: ZoneFor
           <button
             type="submit"
             form="zone-form"
-            onClick={handleSubmit}
-            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            disabled={saving}
+            className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
-            {editingZone ? "Save Changes" : "Create Zone"}
+            {saving ? (
+              <div className="flex items-center">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Saving...
+              </div>
+            ) : (
+              editingZone ? "Save Changes" : "Create Zone"
+            )}
           </button>
         </div>
       </div>

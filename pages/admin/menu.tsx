@@ -369,6 +369,10 @@ export default function AdminMenuTablePage() {
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                   placeholder="e.g., Grilled Chicken Sandwich"
                   required
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
               </div>
@@ -382,6 +386,10 @@ export default function AdminMenuTablePage() {
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
                   placeholder="Brief description of the item..."
                   rows={3}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-y"
                 />
               </div>
@@ -433,6 +441,10 @@ export default function AdminMenuTablePage() {
                     value={form.image_url}
                     onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
                     placeholder="https://example.com/image.jpg"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    autoCapitalize="off"
+                    spellCheck="false"
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                   />
                 </div>
@@ -539,6 +551,10 @@ export default function AdminMenuTablePage() {
                   placeholder="Search by name..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  autoCapitalize="off"
+                  spellCheck="false"
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 min-w-[200px]"
                 />
                 <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -72,6 +72,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     console.log("Order created successfully:", order.id);
 
+    // Schedule confirmation SMS to be sent after 2 minutes
+    setTimeout(async () => {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/api/notifications/send-order-confirmation`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderId: order.id,
+            userId: order.user_id
+          })
+        });
+      } catch (error) {
+        console.error("Failed to send order confirmation SMS:", error);
+      }
+    }, 2 * 60 * 1000); // 2 minutes delay
+
     res.status(201).json({
       success: true,
       order_id: order.id,

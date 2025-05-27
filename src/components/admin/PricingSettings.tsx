@@ -1,5 +1,19 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/utils/supabaseClient';
+import ZonePricingMatrix from './PricingSettings/ZonePricingMatrix';
+
+// Tooltip component for explanations
+function Tooltip({ children, content }: { children: React.ReactNode; content: string }) {
+  return (
+    <div className="relative group inline-block">
+      {children}
+      <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+        {content}
+        <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+      </div>
+    </div>
+  );
+}
 
 interface Fee {
   id?: number;
@@ -336,8 +350,8 @@ export default function PricingSettings() {
       {/* Tax Settings */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-semibold text-gray-900">Tax Settings</h3>
-          <p className="text-sm text-gray-600">Configure tax rates and calculation</p>
+          <h3 className="text-lg font-semibold text-gray-900">Global Tax Settings</h3>
+          <p className="text-sm text-gray-600">Configure default tax rates (zone-specific rates below)</p>
         </div>
         <div className="p-6 space-y-6">
           <div className="flex items-center space-x-3">
@@ -356,7 +370,7 @@ export default function PricingSettings() {
           {taxSettings.is_enabled && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Default Tax Rate
+                Default Tax Rate (fallback)
               </label>
               <div className="flex items-center">
                 <input
@@ -366,12 +380,12 @@ export default function PricingSettings() {
                   className="w-32 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="0"
                   max="100"
-                  step="0.1"
+                  step="0.01"
                 />
                 <span className="ml-2 text-sm text-gray-500">%</span>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Zone-specific rates can be configured in delivery zone settings
+                Used when no zone-specific rate is configured
               </p>
             </div>
           )}
@@ -388,12 +402,23 @@ export default function PricingSettings() {
         </div>
       </div>
 
+      {/* Zone-Specific Pricing Matrix */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+        <div className="px-6 py-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Zone-Specific Pricing</h3>
+          <p className="text-sm text-gray-600">Configure different delivery fees and tax rates for each zone</p>
+        </div>
+        <div className="p-6">
+          <ZonePricingMatrix />
+        </div>
+      </div>
+
       {/* Fees Management */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200">
         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
           <div>
-            <h3 className="text-lg font-semibold text-gray-900">Fees & Charges</h3>
-            <p className="text-sm text-gray-600">Manage delivery, service, and processing fees</p>
+            <h3 className="text-lg font-semibold text-gray-900">Global Fees & Charges</h3>
+            <p className="text-sm text-gray-600">Fallback fees when no zone-specific pricing is configured</p>
           </div>
           <button
             onClick={() => setShowAddFee(true)}
@@ -406,7 +431,7 @@ export default function PricingSettings() {
         {/* Add Fee Form */}
         {showAddFee && (
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Fee Name
@@ -443,6 +468,45 @@ export default function PricingSettings() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   min="0"
                   step={newFee.type === 'percentage' ? '0.1' : '0.01'}
+                />
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  Min Order ($)
+                  <Tooltip content="Fee only applies to orders above this amount. Leave empty for no minimum.">
+                    <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </Tooltip>
+                </label>
+                <input
+                  type="number"
+                  value={newFee.min_order_amount || ''}
+                  onChange={(e) => setNewFee({ ...newFee, min_order_amount: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                  placeholder="None"
+                />
+              </div>
+              <div>
+                <label className="flex items-center text-sm font-medium text-gray-700 mb-1">
+                  Max Amount ($)
+                  <Tooltip content="For percentage fees, caps the maximum fee amount. Leave empty for no cap.">
+                    <svg className="w-4 h-4 ml-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </Tooltip>
+                </label>
+                <input
+                  type="number"
+                  value={newFee.max_amount || ''}
+                  onChange={(e) => setNewFee({ ...newFee, max_amount: e.target.value ? parseFloat(e.target.value) : undefined })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  min="0"
+                  step="0.01"
+                  placeholder="None"
+                  disabled={newFee.type === 'fixed'}
                 />
               </div>
               <div className="flex items-end space-x-2">
@@ -486,7 +550,13 @@ export default function PricingSettings() {
                           <p className="text-sm text-gray-600">
                             {fee.type === 'percentage' ? `${fee.amount}%` : `$${fee.amount.toFixed(2)}`}
                             {fee.type === 'percentage' ? ' of subtotal' : ' flat fee'}
+                            {fee.max_amount && fee.type === 'percentage' && ` (max $${fee.max_amount.toFixed(2)})`}
                           </p>
+                          {fee.min_order_amount && (
+                            <p className="text-xs text-gray-500">
+                              Applies to orders $${fee.min_order_amount.toFixed(2)}+
+                            </p>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">
                           <label className="flex items-center">

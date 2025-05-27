@@ -59,7 +59,7 @@ export function useServiceWorker() {
   const updateStatus = useCallback(async () => {
     const status = await getServiceWorkerStatus();
     const cacheUsage = await getCacheStorageUsage();
-    
+
     setState(prev => ({
       ...prev,
       ...status,
@@ -93,7 +93,7 @@ export function useServiceWorker() {
             console.error('❌ Service Worker: Registration failed:', error);
           },
         });
-        
+
         await updateStatus();
       } catch (error) {
         console.error('❌ Service Worker: Setup failed:', error);
@@ -217,38 +217,90 @@ export function useOfflineDetection() {
     typeof navigator !== 'undefined' ? navigator.onLine : true
   );
   const [wasOffline, setWasOffline] = useState(false);
+  const [lastNetworkCheck, setLastNetworkCheck] = useState(Date.now());
+
+  // Enhanced network connectivity check - TEMPORARILY DISABLED
+  const checkNetworkConnectivity = useCallback(async () => {
+    // Temporarily disabled to stop health-check spam while debugging delivery zones
+    console.log('🔧 Network check temporarily disabled for debugging');
+    return true; // Assume online for now
+
+    try {
+      // Try to fetch a small resource to verify actual connectivity
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 second timeout
+
+      const response = await fetch('/api/health-check', {
+        method: 'HEAD',
+        cache: 'no-cache',
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      const actuallyOnline = response.ok;
+      setIsOnline(actuallyOnline);
+      setLastNetworkCheck(Date.now());
+
+      return actuallyOnline;
+    } catch (error) {
+      // If fetch fails, we're likely offline
+      console.log('📴 Network check failed:', error.message);
+      setIsOnline(false);
+      setLastNetworkCheck(Date.now());
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
-    const handleOnline = () => {
-      setIsOnline(true);
-      if (wasOffline) {
+    const handleOnline = async () => {
+      console.log('🌐 Browser reports online, verifying...');
+      const actuallyOnline = await checkNetworkConnectivity();
+
+      if (actuallyOnline && wasOffline) {
         console.log('🌐 Connection restored');
         // Trigger data refresh when coming back online
         window.dispatchEvent(new CustomEvent('connection-restored'));
+        setWasOffline(false);
       }
-      setWasOffline(false);
     };
 
     const handleOffline = () => {
+      console.log('📴 Browser reports offline');
       setIsOnline(false);
       setWasOffline(true);
-      console.log('📴 Connection lost');
       // Trigger offline mode
       window.dispatchEvent(new CustomEvent('connection-lost'));
     };
 
+    // Temporarily disable initial connectivity check to debug delivery windows issue
+    // if (!navigator.onLine) {
+    //   checkNetworkConnectivity();
+    // }
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+
+    // Temporarily disable periodic connectivity check to debug delivery windows issue
+    // const interval = setInterval(() => {
+    //   const timeSinceLastCheck = Date.now() - lastNetworkCheck;
+    //   // Only check if browser reports offline OR it's been more than 2 minutes since last check
+    //   if (!navigator.onLine || timeSinceLastCheck > 120000) {
+    //     checkNetworkConnectivity();
+    //   }
+    // }, 60000); // Check every minute, but only run connectivity test if needed
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      // clearInterval(interval); // Temporarily disabled
     };
-  }, [wasOffline]);
+  }, [wasOffline, checkNetworkConnectivity, lastNetworkCheck]);
 
   return {
     isOnline,
     isOffline: !isOnline,
     wasOffline,
+    checkConnectivity: checkNetworkConnectivity,
   };
 }

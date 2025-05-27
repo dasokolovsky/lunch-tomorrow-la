@@ -233,6 +233,8 @@ export default function AdminOrdersPage() {
   const handleStatusChange = async (orderId: number, newStatus: OrderStatus) => {
     setUpdatingOrderId(orderId);
     try {
+      const order = orders.find(o => o.id === orderId);
+
       const { error } = await supabase
         .from("orders")
         .update({
@@ -245,6 +247,22 @@ export default function AdminOrdersPage() {
         setOrders(orders => orders.map(o =>
           o.id === orderId ? {...o, status: newStatus} : o
         ));
+
+        // Send notification if status changed to out_for_delivery
+        if (newStatus === 'out_for_delivery' && order) {
+          try {
+            await fetch('/api/notifications/send-out-for-delivery', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                orderId: order.id,
+                userId: order.user_id
+              })
+            });
+          } catch (notificationError) {
+            console.error('Failed to send delivery notification:', notificationError);
+          }
+        }
       }
     } catch (err) {
       console.error('Error updating order status:', err);

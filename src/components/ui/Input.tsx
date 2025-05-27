@@ -5,10 +5,18 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   error?: string;
   label?: string;
   helperText?: string;
+  disableAutofill?: boolean;
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, type = 'text', error, label, helperText, ...props }, ref) => {
+  ({ className, type = 'text', error, label, helperText, disableAutofill = false, ...props }, ref) => {
+    const autofillProps = disableAutofill ? {
+      autoComplete: 'off',
+      autoCorrect: 'off',
+      autoCapitalize: 'off',
+      spellCheck: false
+    } : {};
+
     return (
       <div className="space-y-2">
         {label && (
@@ -24,6 +32,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
             className
           )}
           ref={ref}
+          {...autofillProps}
           {...props}
         />
         {error && (

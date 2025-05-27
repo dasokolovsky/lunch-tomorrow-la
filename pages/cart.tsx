@@ -9,7 +9,7 @@ import { getSavedAddress, type StoredAddress } from "@/utils/addressStorage";
 import { getBestAddressForDisplay } from "@/utils/addressDisplay";
 import { parseUSAddress } from "@/utils/geolocation";
 import { getDeliveryInfo } from "@/utils/zoneCheck";
-// import TimeWindowSelector from "@/components/TimeWindowSelector";
+import CartDeliveryTimeSelector from "@/components/cart/CartDeliveryTimeSelector";
 import CartLogin from "@/components/CartLogin";
 import CheckoutForm from "@/components/CheckoutForm";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
@@ -483,12 +483,13 @@ export default function CartPage() {
         const deliveryInfo = getDeliveryInfo(point, zones || []);
         setDeliveryInfo(deliveryInfo);
 
-        if (deliveryInfo?.isEligible && deliveryInfo.mergedWindows) {
-          // Auto-select first available window if none selected
-          const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-          const todayWindows = deliveryInfo.mergedWindows[today] || [];
-          if (todayWindows.length > 0 && !selectedWindow) {
-            setSelectedWindow(`${todayWindows[0].start}–${todayWindows[0].end}`);
+        if (deliveryInfo?.isEligible && deliveryInfo.mergedWindows && menuDayInfo?.menuDate) {
+          // Auto-select first available window if none selected, based on delivery date
+          const deliveryDateObj = new Date(menuDayInfo.menuDate + 'T00:00:00');
+          const deliveryDayOfWeek = deliveryDateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+          const deliveryDayWindows = deliveryInfo.mergedWindows[deliveryDayOfWeek] || [];
+          if (deliveryDayWindows.length > 0 && !selectedWindow) {
+            setSelectedWindow(`${deliveryDayWindows[0].start}–${deliveryDayWindows[0].end}`);
           }
         }
       } catch (error) {
@@ -497,7 +498,7 @@ export default function CartPage() {
     }
 
     loadDeliveryData();
-  }, [savedAddress]);
+  }, [savedAddress, menuDayInfo?.menuDate]);
 
   function updateQuantity(id: number, quantity: number) {
     if (quantity < 1) return;
@@ -1049,29 +1050,16 @@ export default function CartPage() {
                     )}
 
                     {/* Time Window Section */}
-                    {savedAddress && (
+                    {savedAddress && deliveryInfo?.isEligible && (
                       <div>
-                        <span className="text-sm font-medium text-gray-700 block mb-2">Delivery Time</span>
-                        {selectedWindow ? (
-                          <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
-                            {menuDayInfo?.displayDate || 'Tomorrow'}: {(() => {
-                              // Convert 24-hour format to 12-hour format
-                              const [startTime, endTime] = selectedWindow.split('–');
-                              const formatTime = (time: string) => {
-                                const [hours, minutes] = time.split(':');
-                                const hour = parseInt(hours);
-                                const ampm = hour >= 12 ? 'PM' : 'AM';
-                                const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-                                return `${displayHour}:${minutes} ${ampm}`;
-                              };
-                              return `${formatTime(startTime)} – ${formatTime(endTime)}`;
-                            })()}
-                          </p>
-                        ) : (
-                          <p className="text-sm text-gray-500 bg-gray-50 p-3 rounded-lg">
-                            No time window selected
-                          </p>
-                        )}
+                        <CartDeliveryTimeSelector
+                          windows={deliveryInfo.mergedWindows}
+                          selectedWindow={selectedWindow}
+                          onWindowSelect={setSelectedWindow}
+                          deliveryDate={menuDayInfo?.menuDate}
+                          displayDate={menuDayInfo?.displayDate}
+                          disabled={false}
+                        />
                       </div>
                     )}
 

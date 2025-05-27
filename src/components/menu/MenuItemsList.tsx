@@ -50,6 +50,17 @@ const MenuItemCard = memo(({
     if (liveCountdown?.isExpired) return "Ordering closed";
     if (!menuDayInfo?.hasMenus) return "Menu unavailable";
     if (!deliveryInfo?.isEligible) return "Enter delivery address";
+
+    // Check if address is eligible but no delivery windows for this day
+    if (deliveryInfo?.isEligible && menuDayInfo?.menuDate) {
+      const deliveryDateObj = new Date(menuDayInfo.menuDate + 'T00:00:00');
+      const dayOfWeek = deliveryDateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+      const dayWindows = deliveryInfo.mergedWindows[dayOfWeek] || [];
+      if (dayWindows.length === 0) {
+        return "No delivery this day";
+      }
+    }
+
     if (!selectedWindow) return "Select delivery time";
     return "Add to cart";
   };

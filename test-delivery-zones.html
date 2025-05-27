@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Zone Functionality Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+        .result { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Delivery Zone Functionality Test</h1>
+    
+    <div class="test-section info">
+        <h2>Test Instructions</h2>
+        <p>This page tests the delivery zone management functionality. Click the buttons below to test different features:</p>
+        <ul>
+            <li><strong>Fetch Zones:</strong> Get all delivery zones</li>
+            <li><strong>Update Zone Name:</strong> Update the zone name</li>
+            <li><strong>Test Zone Pricing:</strong> Test zone-specific pricing functionality</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>1. Fetch Delivery Zones</h2>
+        <button onclick="fetchZones()">Fetch Zones</button>
+        <div id="fetch-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Update Zone Name</h2>
+        <input type="text" id="new-zone-name" placeholder="Enter new zone name" value="Updated Zone Name">
+        <button onclick="updateZoneName()">Update Zone Name</button>
+        <div id="update-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Zone Pricing</h2>
+        <button onclick="testZonePricing()">Test Zone Pricing</button>
+        <div id="pricing-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>4. Test Pricing Calculation</h2>
+        <input type="number" id="test-subtotal" placeholder="Subtotal" value="25.00" step="0.01">
+        <button onclick="testPricingCalculation()">Calculate Pricing</button>
+        <div id="calculation-result" class="result"></div>
+    </div>
+
+    <script>
+        let currentZone = null;
+
+        async function fetchZones() {
+            const resultDiv = document.getElementById('fetch-result');
+            try {
+                const response = await fetch('/api/delivery-zones');
+                const zones = await response.json();
+                
+                if (zones.length > 0) {
+                    currentZone = zones[0];
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success: Found ${zones.length} zone(s)</h4>
+                            <pre>${JSON.stringify(zones, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ No zones found</h4>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error fetching zones</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function updateZoneName() {
+            const resultDiv = document.getElementById('update-result');
+            const newName = document.getElementById('new-zone-name').value;
+            
+            if (!currentZone) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ No zone selected. Please fetch zones first.</h4>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/delivery-zones/${currentZone.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: newName,
+                        geojson: currentZone.geojson,
+                        windows: currentZone.windows,
+                        active: currentZone.active
+                    })
+                });
+
+                if (response.ok) {
+                    const updatedZone = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success: Zone name updated</h4>
+                            <p>Old name: <strong>${currentZone.name}</strong></p>
+                            <p>New name: <strong>${updatedZone.name}</strong></p>
+                            <pre>${JSON.stringify(updatedZone, null, 2)}</pre>
+                        </div>
+                    `;
+                    currentZone = updatedZone;
+                } else {
+                    const error = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error updating zone name</h4>
+                            <pre>${JSON.stringify(error, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error updating zone name</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testZonePricing() {
+            const resultDiv = document.getElementById('pricing-result');
+            
+            try {
+                // First, get zone pricing
+                const response = await fetch('/api/zone-pricing');
+                const zonePricing = await response.json();
+                
+                if (zonePricing.length > 0) {
+                    const zone = zonePricing[0];
+                    
+                    // Test saving zone pricing
+                    const saveResponse = await fetch('/api/zone-pricing', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            zoneId: zone.zone.id,
+                            fees: [
+                                {
+                                    name: 'Test Delivery Fee',
+                                    type: 'fixed',
+                                    amount: 4.99,
+                                    is_active: true,
+                                    description: 'Test fee from functionality test'
+                                }
+                            ],
+                            taxSettings: {
+                                tax_rate: 9.25,
+                                is_enabled: true,
+                                description: 'Test tax rate'
+                            }
+                        })
+                    });
+
+                    if (saveResponse.ok) {
+                        resultDiv.innerHTML = `
+                            <div class="success">
+                                <h4>✅ Success: Zone pricing functionality working</h4>
+                                <p>Zone: <strong>${zone.zone.name}</strong></p>
+                                <p>Added test delivery fee: $4.99</p>
+                                <p>Set tax rate: 9.25%</p>
+                            </div>
+                        `;
+                    } else {
+                        const error = await saveResponse.json();
+                        resultDiv.innerHTML = `
+                            <div class="error">
+                                <h4>❌ Error saving zone pricing</h4>
+                                <pre>${JSON.stringify(error, null, 2)}</pre>
+                            </div>
+                        `;
+                    }
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ No zones found for pricing test</h4>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error testing zone pricing</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        async function testPricingCalculation() {
+            const resultDiv = document.getElementById('calculation-result');
+            const subtotal = parseFloat(document.getElementById('test-subtotal').value);
+            
+            if (!currentZone) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ No zone selected. Please fetch zones first.</h4>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/pricing-settings', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        subtotal: subtotal,
+                        delivery_zone_id: currentZone.id
+                    })
+                });
+
+                if (response.ok) {
+                    const pricing = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="success">
+                            <h4>✅ Success: Pricing calculation working</h4>
+                            <p>Subtotal: $${pricing.subtotal.toFixed(2)}</p>
+                            <p>Total Fees: $${pricing.totalFees.toFixed(2)}</p>
+                            <p>Tax (${pricing.taxRate}%): $${pricing.taxAmount.toFixed(2)}</p>
+                            <p><strong>Total: $${pricing.total.toFixed(2)}</strong></p>
+                            <pre>${JSON.stringify(pricing, null, 2)}</pre>
+                        </div>
+                    `;
+                } else {
+                    const error = await response.json();
+                    resultDiv.innerHTML = `
+                        <div class="error">
+                            <h4>❌ Error calculating pricing</h4>
+                            <pre>${JSON.stringify(error, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h4>❌ Error calculating pricing</h4>
+                        <pre>${error.message}</pre>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-fetch zones on page load
+        window.onload = function() {
+            fetchZones();
+        };
+    </script>
+</body>
+</html>

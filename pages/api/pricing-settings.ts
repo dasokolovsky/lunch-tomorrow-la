@@ -52,66 +52,150 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: "Invalid subtotal" });
       }
 
-      // Get active fees
-      const { data: fees } = await supabase
-        .from('pricing_fees')
-        .select('*')
-        .eq('is_active', true);
-
-      // Get tax settings
-      const { data: taxSettings } = await supabase
-        .from('tax_settings')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
       let totalFees = 0;
       const feeBreakdown: Array<{name: string, amount: number, type: string}> = [];
       let taxAmount = 0;
+      let taxRate = 0;
 
-      // Calculate fees
-      if (fees) {
-        for (const fee of fees) {
-          // Check minimum order amount
-          if (fee.min_order_amount && subtotal < fee.min_order_amount) {
-            continue;
-          }
+      // Try to get zone-specific pricing first
+      if (delivery_zone_id) {
+        // Get zone-specific fees
+        const { data: zoneFees } = await supabase
+          .from('zone_pricing_fees')
+          .select('*')
+          .eq('delivery_zone_id', delivery_zone_id)
+          .eq('is_active', true);
 
-          let feeAmount = 0;
-          if (fee.type === 'percentage') {
-            feeAmount = subtotal * (fee.amount / 100);
-            // Apply max amount if specified
-            if (fee.max_amount && feeAmount > fee.max_amount) {
-              feeAmount = fee.max_amount;
+        // Get zone-specific tax settings
+        const { data: zoneTaxSettings } = await supabase
+          .from('zone_tax_settings')
+          .select('*')
+          .eq('delivery_zone_id', delivery_zone_id)
+          .eq('is_enabled', true)
+          .single();
+
+        // Calculate zone-specific fees
+        if (zoneFees && zoneFees.length > 0) {
+          for (const fee of zoneFees) {
+            // Check minimum order amount
+            if (fee.min_order_amount && subtotal < fee.min_order_amount) {
+              continue;
             }
-          } else {
-            feeAmount = fee.amount;
+
+            let feeAmount = 0;
+            if (fee.type === 'percentage') {
+              feeAmount = subtotal * (fee.amount / 100);
+              // Apply max amount if specified
+              if (fee.max_amount && feeAmount > fee.max_amount) {
+                feeAmount = fee.max_amount;
+              }
+            } else {
+              feeAmount = fee.amount;
+            }
+
+            totalFees += feeAmount;
+            feeBreakdown.push({
+              name: fee.name,
+              amount: feeAmount,
+              type: fee.type
+            });
           }
+        } else {
+          // Fallback to global fees if no zone-specific fees
+          const { data: globalFees } = await supabase
+            .from('pricing_fees')
+            .select('*')
+            .eq('is_active', true);
 
-          totalFees += feeAmount;
-          feeBreakdown.push({
-            name: fee.name,
-            amount: feeAmount,
-            type: fee.type
-          });
-        }
-      }
+          if (globalFees) {
+            for (const fee of globalFees) {
+              if (fee.min_order_amount && subtotal < fee.min_order_amount) {
+                continue;
+              }
 
-      // Calculate tax
-      if (taxSettings?.is_enabled) {
-        let taxRate = taxSettings.default_rate;
+              let feeAmount = 0;
+              if (fee.type === 'percentage') {
+                feeAmount = subtotal * (fee.amount / 100);
+                if (fee.max_amount && feeAmount > fee.max_amount) {
+                  feeAmount = fee.max_amount;
+                }
+              } else {
+                feeAmount = fee.amount;
+              }
 
-        // Check for zone-specific tax rate
-        if (delivery_zone_id && taxSettings.zone_specific_rates) {
-          const zoneRate = taxSettings.zone_specific_rates[delivery_zone_id];
-          if (zoneRate !== undefined) {
-            taxRate = zoneRate;
+              totalFees += feeAmount;
+              feeBreakdown.push({
+                name: fee.name,
+                amount: feeAmount,
+                type: fee.type
+              });
+            }
           }
         }
 
-        // Tax is calculated on subtotal + fees
-        taxAmount = (subtotal + totalFees) * (taxRate / 100);
+        // Calculate zone-specific tax
+        if (zoneTaxSettings) {
+          taxRate = zoneTaxSettings.tax_rate;
+          taxAmount = (subtotal + totalFees) * (taxRate / 100);
+        } else {
+          // Fallback to global tax settings
+          const { data: globalTaxSettings } = await supabase
+            .from('tax_settings')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+
+          if (globalTaxSettings?.is_enabled) {
+            taxRate = globalTaxSettings.default_rate;
+            taxAmount = (subtotal + totalFees) * (taxRate / 100);
+          }
+        }
+      } else {
+        // No zone specified, use global pricing
+        const { data: globalFees } = await supabase
+          .from('pricing_fees')
+          .select('*')
+          .eq('is_active', true);
+
+        const { data: globalTaxSettings } = await supabase
+          .from('tax_settings')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+
+        // Calculate global fees
+        if (globalFees) {
+          for (const fee of globalFees) {
+            if (fee.min_order_amount && subtotal < fee.min_order_amount) {
+              continue;
+            }
+
+            let feeAmount = 0;
+            if (fee.type === 'percentage') {
+              feeAmount = subtotal * (fee.amount / 100);
+              if (fee.max_amount && feeAmount > fee.max_amount) {
+                feeAmount = fee.max_amount;
+              }
+            } else {
+              feeAmount = fee.amount;
+            }
+
+            totalFees += feeAmount;
+            feeBreakdown.push({
+              name: fee.name,
+              amount: feeAmount,
+              type: fee.type
+            });
+          }
+        }
+
+        // Calculate global tax
+        if (globalTaxSettings?.is_enabled) {
+          taxRate = globalTaxSettings.default_rate;
+          taxAmount = (subtotal + totalFees) * (taxRate / 100);
+        }
       }
 
       const total = subtotal + totalFees + taxAmount;
@@ -121,9 +205,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         fees: feeBreakdown,
         totalFees,
         taxAmount,
-        taxRate: taxSettings?.is_enabled ?
-          (delivery_zone_id && taxSettings.zone_specific_rates[delivery_zone_id]) || taxSettings.default_rate
-          : 0,
+        taxRate,
         total
       });
 

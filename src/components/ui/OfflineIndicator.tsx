@@ -8,18 +8,33 @@ interface OfflineIndicatorProps {
 export default function OfflineIndicator({ className = '' }: OfflineIndicatorProps) {
   const { isOnline, isOffline, wasOffline } = useOfflineDetection();
   const [showReconnected, setShowReconnected] = useState(false);
+  const [confirmedOffline, setConfirmedOffline] = useState(false);
 
   // Show "reconnected" message briefly when coming back online
   useEffect(() => {
     if (isOnline && wasOffline) {
       setShowReconnected(true);
+      setConfirmedOffline(false);
       const timer = setTimeout(() => {
         setShowReconnected(false);
       }, 3000); // Show for 3 seconds
-      
+
       return () => clearTimeout(timer);
     }
   }, [isOnline, wasOffline]);
+
+  // Only show offline message after a delay to avoid false positives
+  useEffect(() => {
+    if (isOffline) {
+      const timer = setTimeout(() => {
+        setConfirmedOffline(true);
+      }, 2000); // Wait 2 seconds before showing offline message
+
+      return () => clearTimeout(timer);
+    } else {
+      setConfirmedOffline(false);
+    }
+  }, [isOffline]);
 
   // Don't render anything if online and never was offline
   if (isOnline && !showReconnected) {
@@ -28,7 +43,7 @@ export default function OfflineIndicator({ className = '' }: OfflineIndicatorPro
 
   return (
     <div className={`fixed top-0 left-0 right-0 z-50 ${className}`}>
-      {isOffline && (
+      {confirmedOffline && (
         <div className="bg-red-600 text-white text-center py-2 px-4 text-sm font-medium">
           <div className="flex items-center justify-center gap-2">
             <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
@@ -36,7 +51,7 @@ export default function OfflineIndicator({ className = '' }: OfflineIndicatorPro
           </div>
         </div>
       )}
-      
+
       {showReconnected && (
         <div className="bg-green-600 text-white text-center py-2 px-4 text-sm font-medium animate-slide-down">
           <div className="flex items-center justify-center gap-2">
@@ -85,7 +100,7 @@ export function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPromptProps
               </svg>
             </div>
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold text-gray-900 mb-1">
               Install Lunch Tomorrow
@@ -93,7 +108,7 @@ export function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPromptProps
             <p className="text-sm text-gray-600 mb-3">
               Add to your home screen for quick access and offline ordering.
             </p>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={handleInstall}
@@ -109,7 +124,7 @@ export function PWAInstallPrompt({ onInstall, onDismiss }: PWAInstallPromptProps
               </button>
             </div>
           </div>
-          
+
           <button
             onClick={handleDismiss}
             className="flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
@@ -156,7 +171,7 @@ export function UpdatePrompt({ onUpdate, onDismiss }: UpdatePromptProps) {
               <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
             </svg>
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <h3 className="text-sm font-semibold mb-1">
               Update Available
@@ -164,7 +179,7 @@ export function UpdatePrompt({ onUpdate, onDismiss }: UpdatePromptProps) {
             <p className="text-sm text-blue-100 mb-3">
               A new version is ready. Update now for the latest features.
             </p>
-            
+
             <div className="flex gap-2">
               <button
                 onClick={handleUpdate}
@@ -180,7 +195,7 @@ export function UpdatePrompt({ onUpdate, onDismiss }: UpdatePromptProps) {
               </button>
             </div>
           </div>
-          
+
           <button
             onClick={handleDismiss}
             className="flex-shrink-0 text-blue-200 hover:text-white transition-colors"

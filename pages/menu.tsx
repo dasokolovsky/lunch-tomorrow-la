@@ -46,10 +46,57 @@ export default function MenuPage() {
   const { forceRefresh } = useBackgroundSync();
   useSmartPrefetch();
 
+  // Check if delivery is actually available for the specific day
+  const hasDeliveryWindowsForDay = useMemo(() => {
+    if (!deliveryInfo?.isEligible || !menuDayInfo?.menuDate) return false;
+
+    // Get the day of the week for the delivery date
+    const deliveryDateObj = new Date(menuDayInfo.menuDate + 'T00:00:00');
+    const dayOfWeek = deliveryDateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+
+    // Check if there are windows for this specific day
+    const dayWindows = deliveryInfo.mergedWindows[dayOfWeek] || [];
+    return dayWindows.length > 0;
+  }, [deliveryInfo?.isEligible, deliveryInfo?.mergedWindows, menuDayInfo?.menuDate]);
+
+  // Find the next available delivery day
+  const nextDeliveryDay = useMemo(() => {
+    if (!deliveryInfo?.mergedWindows) return null;
+
+    const daysOfWeek = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+    // Find all days that have delivery windows
+    const availableDays = daysOfWeek.filter(day => {
+      const windows = deliveryInfo.mergedWindows[day] || [];
+      return windows.length > 0;
+    });
+
+    if (availableDays.length === 0) return null;
+
+    // Get current day of week (0 = Sunday, 1 = Monday, etc.)
+    const today = new Date();
+    const currentDayIndex = today.getDay();
+
+    // Find the next available day starting from tomorrow
+    for (let i = 1; i <= 7; i++) {
+      const checkDayIndex = (currentDayIndex + i) % 7;
+      const checkDayName = daysOfWeek[checkDayIndex];
+
+      if (availableDays.includes(checkDayName)) {
+        return dayNames[checkDayIndex];
+      }
+    }
+
+    // Fallback to first available day
+    const firstAvailableIndex = daysOfWeek.indexOf(availableDays[0]);
+    return dayNames[firstAvailableIndex];
+  }, [deliveryInfo?.mergedWindows]);
+
   // Memoized computed values
   const canOrder = useMemo(() =>
-    Boolean(deliveryInfo?.isEligible && selectedWindow !== null && !liveCountdown?.isExpired && menuDayInfo?.hasMenus),
-    [deliveryInfo?.isEligible, selectedWindow, liveCountdown?.isExpired, menuDayInfo?.hasMenus]
+    Boolean(hasDeliveryWindowsForDay && selectedWindow !== null && !liveCountdown?.isExpired && menuDayInfo?.hasMenus),
+    [hasDeliveryWindowsForDay, selectedWindow, liveCountdown?.isExpired, menuDayInfo?.hasMenus]
   );
 
   // Handle adding items to cart
@@ -134,7 +181,28 @@ export default function MenuPage() {
                     </div>
                   )}
 
-                  {deliveryInfo?.isEligible && (
+                  {deliveryInfo?.isEligible && !hasDeliveryWindowsForDay && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-yellow-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                        </svg>
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-yellow-800">
+                            No delivery available on {menuDayInfo?.displayDate}
+                          </p>
+                          <p className="text-xs text-yellow-700 mt-1">
+                            {nextDeliveryDay
+                              ? `Next delivery: ${nextDeliveryDay}`
+                              : 'Check back for available delivery days'
+                            }
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {hasDeliveryWindowsForDay && (
                     <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
                       <div className="flex items-center space-x-2">
                         <HiCheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
@@ -149,7 +217,7 @@ export default function MenuPage() {
                 </div>
 
                 {/* Delivery Time Selection */}
-                {deliveryInfo?.isEligible && (
+                {hasDeliveryWindowsForDay && (
                   <DeliveryTimeSelector
                     deliveryInfo={deliveryInfo}
                     menuDayInfo={menuDayInfo}

@@ -25,10 +25,14 @@ export default function DeliveryTimeSelector({
   const timeSlots = useMemo(() => {
     if (!deliveryInfo?.isEligible || !menuDayInfo?.menuDate) return [];
 
-    // Get all unique windows across all days (since we only show one delivery day)
-    const allWindows = Object.values(deliveryInfo.mergedWindows).flat();
+    // Get the day of the week for the delivery date
+    const deliveryDateObj = new Date(menuDayInfo.menuDate + 'T00:00:00'); // Ensure local timezone
+    const dayOfWeek = deliveryDateObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
-    return allWindows.map((window, idx) => {
+    // Only get windows for the specific day of the week
+    const dayWindows = deliveryInfo.mergedWindows[dayOfWeek] || [];
+
+    return dayWindows.map((window, idx) => {
       const startTime = new Date(`1970-01-01T${window.start}`).toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',

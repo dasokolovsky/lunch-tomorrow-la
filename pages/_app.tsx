@@ -28,7 +28,7 @@ function AppWrapper({ Component, pageProps, router }: AppProps) {
     <>
       <Component {...pageProps} />
 
-      {/* Offline/Online indicator */}
+      {/* Offline/Online indicator with improved detection */}
       <OfflineIndicator />
 
       {/* PWA install prompt */}
