@@ -213,8 +213,7 @@ GRANT ALL ON public.pricing_history TO authenticated;
 SELECT
     schemaname,
     tablename,
-    rowsecurity as rls_enabled,
-    hasoids
+    rowsecurity as rls_enabled
 FROM pg_tables
 WHERE schemaname = 'public'
     AND tablename IN (
